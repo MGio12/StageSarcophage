@@ -1,0 +1,89 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+MANIFEST
+
+# === Environnement virtuel ===
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# === Variables d'environnement ===
+.env
+.env.local
+.env.production
+*.env
+
+# === Instance Flask (config locale, secrets) ===
+instance/*
+!instance/.gitkeep
+
+# === Base de données ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === Données locales (fichiers PDF collectés) ===
+data/*
+!data/.gitkeep
+
+# === Logs ===
+logs/*
+!logs/.gitkeep
+*.log
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === Tests ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# === Mypy ===
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# === Docker ===
+.docker/
+
+# === Clés et certificats ===
+*.pem
+*.key
+*.crt
+*.p12
+
+# === Divers ===
+*.bak
+*.tmp
+.cache/

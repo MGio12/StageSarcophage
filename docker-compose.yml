@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - pdf_data:/data/modes-degrades
+      - ./instance:/app/instance
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  pdf_data:

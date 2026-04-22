@@ -1,0 +1,23 @@
+# Web framework
+Flask==3.1.1
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
+
+# Scheduler de tâches de fond
+APScheduler==3.10.4
+
+# Accès SFTP
+paramiko==3.5.1
+
+# Accès SMB/CIFS
+smbprotocol==1.14.0
+
+# Chiffrement des identifiants (Fernet = AES-128-CBC + HMAC)
+cryptography==44.0.3
+
+# Gestion des variables d'environnement
+python-dotenv==1.0.1
+
+# Tests
+pytest==8.3.5
+pytest-flask==1.3.0
