@@ -35,11 +35,12 @@
 ```
 stageSarcophage/
 ├── app/
-│   ├── __init__.py          # Factory Flask (create_app)
+│   ├── __init__.py          # Factory Flask (create_app) + WAL pragma + CLI init-db
+│   ├── extensions.py        # Instance SQLAlchemy partagée (db)
 │   ├── models/              # Modèles SQLAlchemy
-│   │   ├── source.py        # Table sources
-│   │   ├── document.py      # Table documents
-│   │   └── journal.py       # Table journaux
+│   │   ├── source.py        # Table sources (login/mot_de_passe chiffrés via @property)
+│   │   ├── document.py      # Table documents (enum StatutDocument)
+│   │   └── journal.py       # Table journaux (details JSON, enum TypeEvenement)
 │   ├── routes/              # Blueprints Flask
 │   │   ├── main.py          # Dashboard (/)
 │   │   ├── sources.py       # CRUD sources (/sources)
@@ -52,13 +53,18 @@ stageSarcophage/
 │   │   └── purge_service.py # Logique de purge
 │   ├── scheduler/           # Tâches APScheduler
 │   │   └── tasks.py
+│   ├── utils/
+│   │   └── crypto.py        # chiffrer() / dechiffrer() via Fernet
 │   ├── static/              # CSS, JS, assets
 │   └── templates/           # Jinja2 HTML
 ├── instance/                # Config locale + app.db (hors git)
-├── tests/                   # pytest
+├── tests/
+│   ├── conftest.py          # Fixtures pytest (app, db, client)
+│   ├── test_crypto.py       # Tests chiffrement (8 cas)
+│   └── test_models.py       # Tests modèles + tables (17 cas)
 ├── data/                    # PDF collectés, organisés par source (hors git)
 ├── logs/                    # Logs applicatifs (hors git)
-├── config.py                # Configs Dev / Prod
+├── config.py                # Configs Dev / Prod / Testing
 ├── run.py                   # Point d'entrée
 ├── requirements.txt
 ├── Dockerfile
@@ -138,8 +144,13 @@ stageSarcophage/
 
 | Décision | Choix | Raison |
 |---|---|---|
-| SQLite WAL mode | Activé | Permet lectures concurrentes pendant écritures du scheduler |
-| Chiffrement Fernet | Symétrique | Suffisant pour un seul admin ; clé dans variable d'env |
+| SQLite WAL mode | Activé via `PRAGMA journal_mode=WAL` sur connect | Lectures concurrentes pendant écritures du scheduler |
+| `PRAGMA foreign_keys=ON` | Activé sur chaque connexion | SQLite désactive les FK par défaut |
+| Chiffrement | Fernet (AES-128-CBC + HMAC-SHA256) | CDC dit "AES-256 ou équivalent" — Fernet est l'équivalent sécurisé retenu |
+| Colonnes chiffrées | `@property` Python sur `_login`/`_mot_de_passe` | Chiffrement transparent, invisible pour le code appelant |
+| Enum Python | `StatutDocument`, `TypeEvenement` | Validation des valeurs autorisées au niveau modèle |
+| details Journal | Texte JSON sérialisé manuellement | Prévisible sur SQLite, pas de dépendance JSON native |
+| ENCRYPTION_KEY en tests | Générée via `Fernet.generate_key()` dans conftest.py | Clé valide + unique par session, jamais hardcodée |
 | APScheduler vs Celery | APScheduler | Pas de dépendance Redis/RabbitMQ, volume modéré |
 | PDF viewer | iframe natif d'abord | Zéro dépendance JS externe, PDF.js en Phase 2 si besoin |
 | Bootstrap 5 | CDN ou local | Interface légère, composants prêts à l'emploi |
@@ -153,7 +164,8 @@ stageSarcophage/
 | Tâche | Statut | Commit |
 |---|---|---|
 | Initialisation structure + Hello World | ✅ Terminé | `chore: initialisation du projet et architecture` |
-| Modèles SQLAlchemy (Source, Document, Journal) | ⬜ À faire | — |
+| Modèles SQLAlchemy (Source, Document, Journal) | ✅ Terminé | `feat: modèles de données et chiffrement` |
+| Chiffrement Fernet (crypto.py) + tests | ✅ Terminé | `feat: modèles de données et chiffrement` |
 | Authentification (session + mot de passe hashé) | ⬜ À faire | — |
 | CRUD Sources (routes + formulaires) | ⬜ À faire | — |
 | Service SFTP (paramiko) | ⬜ À faire | — |

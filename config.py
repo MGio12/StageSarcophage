@@ -36,8 +36,17 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SAMESITE = "Lax"
 
 
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
+    STORAGE_DIR = os.path.join(BASE_DIR, "tests", "_tmp_storage")
+    # ENCRYPTION_KEY injectée par conftest.py via Fernet.generate_key()
+
+
 config = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
+    "testing": TestingConfig,
     "default": DevelopmentConfig,
 }
