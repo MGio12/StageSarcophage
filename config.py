@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from sqlalchemy.pool import StaticPool
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -39,6 +40,11 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    # StaticPool : une seule connexion partagée → la BD :memory: survit entre les appels
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "connect_args": {"check_same_thread": False},
+        "poolclass": StaticPool,
+    }
     WTF_CSRF_ENABLED = False
     STORAGE_DIR = os.path.join(BASE_DIR, "tests", "_tmp_storage")
     # ENCRYPTION_KEY injectée par conftest.py via Fernet.generate_key()
