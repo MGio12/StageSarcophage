@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -83,6 +84,27 @@ def lister_fichiers(source) -> list[FichierDistant]:
             pass
 
     return fichiers
+
+
+def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: str) -> None:
+    """Télécharge un fichier distant vers chemin_local via SMB."""
+    serveur = source.adresse or _construire_chemin_unc(source).lstrip("\\").split("\\")[0]
+    port = source.port or 445
+    try:
+        smbclient.register_session(
+            serveur,
+            username=source.login,
+            password=source.mot_de_passe,
+            port=port,
+        )
+        with smbclient.open_file(fichier_distant.chemin, mode="rb") as f_src:
+            with open(chemin_local, "wb") as f_dst:
+                shutil.copyfileobj(f_src, f_dst)
+    finally:
+        try:
+            smbclient.reset_connection_cache()
+        except Exception:
+            pass
 
 
 def tester_connexion(source) -> ResultatConnexion:

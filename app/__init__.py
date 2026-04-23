@@ -41,4 +41,8 @@ def create_app(config_name=None):
         db.create_all()
         click.echo("Base de données initialisée.")
 
+    if not app.config.get("TESTING"):
+        from app.scheduler.tasks import demarrer_scheduler
+        demarrer_scheduler(app)
+
     return app

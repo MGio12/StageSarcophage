@@ -47,12 +47,12 @@ stageSarcophage/
 │   │   ├── documents.py     # Consultation (/documents)
 │   │   └── journaux.py      # Logs (/journaux)
 │   ├── services/            # Logique métier (sans dépendance HTTP)
-│   │   ├── smb_service.py   # Connecteur SMB (smbprotocol) — tester_connexion + lister_fichiers
-│   │   ├── sftp_service.py  # Connecteur SFTP (paramiko)  — tester_connexion + lister_fichiers
-│   │   ├── sync_service.py  # Orchestration synchronisation (à faire)
-│   │   └── purge_service.py # Logique de purge (à faire)
+│   │   ├── smb_service.py   # Connecteur SMB — lister_fichiers + telecharger_fichier + tester_connexion
+│   │   ├── sftp_service.py  # Connecteur SFTP — lister_fichiers + telecharger_fichier + tester_connexion
+│   │   ├── sync_service.py  # Synchronisation : dédup SHA-256, copie locale, journalisation
+│   │   └── purge_service.py # Purge : corbeille, statuts ok/avertissement/critique
 │   ├── scheduler/           # Tâches APScheduler
-│   │   └── tasks.py
+│   │   └── tasks.py         # demarrer_scheduler + jobs par source + purge nuit à 2h
 │   ├── utils/
 │   │   └── crypto.py        # chiffrer() / dechiffrer() via Fernet
 │   ├── static/              # CSS, JS, assets
@@ -63,7 +63,9 @@ stageSarcophage/
 │   ├── test_crypto.py       # Tests chiffrement (9 cas)
 │   ├── test_models.py       # Tests modèles + tables (17 cas)
 │   ├── test_smb_service.py  # Tests connecteur SMB (13 cas, mock smbclient)
-│   └── test_sftp_service.py # Tests connecteur SFTP (13 cas, mock paramiko)
+│   ├── test_sftp_service.py # Tests connecteur SFTP (13 cas, mock paramiko)
+│   ├── test_sync_service.py # Tests synchronisation (10 cas, mock connectors + vrai DB)
+│   └── test_purge_service.py # Tests purge + statuts (12 cas, vrai DB + tmp_path)
 ├── data/                    # PDF collectés, organisés par source (hors git)
 ├── logs/                    # Logs applicatifs (hors git)
 ├── config.py                # Configs Dev / Prod / Testing
@@ -143,7 +145,21 @@ stageSarcophage/
 
 ---
 
-## 6. Décisions d'architecture
+## 6. Décisions d'architecture clés (sync + purge)
+
+| Décision | Choix | Raison |
+|---|---|---|
+| Dédup deux niveaux | 1. date+taille → skip sans DL ; 2. hash SHA-256 → skip si inchangé | Évite les téléchargements inutiles tout en garantissant l'intégrité |
+| Écriture atomique | `tempfile.mkstemp` → hash → `shutil.move` | Pas de fichier partiel si la copie échoue en cours |
+| Corbeille avant suppression | `_corbeille/{source_id}/` dans STORAGE_DIR | Permet récupération manuelle, conforme CDC §2.4 |
+| Scheduler non démarré en tests | `if not app.config.get("TESTING")` | Évite les threads de fond pendant pytest |
+| Jobs par source | `IntervalTrigger(minutes=source.frequence_sync_minutes)` | Fréquence indépendante par source, conforme CDC §2.2 |
+| Purge globale | `CronTrigger(hour=2)` chaque nuit | Faible impact utilisateur |
+| `_as_utc()` helper | Normalise naive/aware avant comparaison | SQLite+SQLAlchemy peut retourner des datetimes naïves |
+
+## 7. Décisions d'architecture (base)
+
+
 
 | Décision | Choix | Raison |
 |---|---|---|
@@ -160,7 +176,7 @@ stageSarcophage/
 
 ---
 
-## 7. État d'avancement
+## 8. État d'avancement
 
 ### Phase 1 — MVP
 
@@ -172,6 +188,7 @@ stageSarcophage/
 | Authentification (session + mot de passe hashé) | ⬜ À faire | — |
 | CRUD Sources (routes + formulaires) | ⬜ À faire | — |
 | Connecteurs SFTP + SMB (services + tests mock) | ✅ Terminé | `feat: implémentation des connecteurs SMB et SFTP` |
+| Sync service (SHA-256, copie, journal) + Purge service + APScheduler | ✅ Terminé | `feat: logique de synchronisation et purge planifiée` |
 | Sync manuelle + dédup SHA-256 | ⬜ À faire | — |
 | Scheduler (APScheduler) | ⬜ À faire | — |
 | Contrôle de fraîcheur + statuts | ⬜ À faire | — |
@@ -183,7 +200,7 @@ stageSarcophage/
 
 ---
 
-## 8. Points de vigilance sécurité
+## 9. Points de vigilance sécurité
 
 - `SECRET_KEY` et `ENCRYPTION_KEY` : **obligatoirement** dans les variables d'environnement en prod
 - CSRF : activer Flask-WTF sur tous les formulaires modifiants

@@ -78,6 +78,30 @@ def lister_fichiers(source) -> list[FichierDistant]:
     return fichiers
 
 
+def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: str) -> None:
+    """Télécharge un fichier distant vers chemin_local via SFTP."""
+    port = source.port or 22
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        client.connect(
+            hostname=source.adresse,
+            port=port,
+            username=source.login,
+            password=source.mot_de_passe,
+            timeout=TIMEOUT_SECONDES,
+            allow_agent=False,
+            look_for_keys=False,
+        )
+        sftp = client.open_sftp()
+        try:
+            sftp.get(fichier_distant.chemin, chemin_local)
+        finally:
+            sftp.close()
+    finally:
+        client.close()
+
+
 def tester_connexion(source) -> ResultatConnexion:
     """Vérifie l'accessibilité d'un hôte SFTP et retourne les fichiers trouvés."""
     try:
