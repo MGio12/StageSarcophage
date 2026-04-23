@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}{{ titre }} — Modes Dégradés{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">
+    <i class="bi bi-hdd-network"></i> {{ titre }}
+  </h1>
+  <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Retour
+  </a>
+</div>
+
+<form method="post" id="sourceForm"
+      action="{{ url_for('sources.modifier', source_id=source.id) if source else url_for('sources.nouvelle') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="row g-3">
+    <!-- Informations générales -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-info-circle"></i> Informations générales
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="nom" name="nom"
+                   value="{{ source.nom if source else '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description"
+                      rows="2">{{ source.description if source else '' }}</textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label for="type_serveur" class="form-label">Type de serveur</label>
+              <select class="form-select" id="type_serveur" name="type_serveur">
+                <option value="linux"
+                  {% if source and source.type_serveur == 'linux' %}selected{% endif %}>
+                  Linux
+                </option>
+                <option value="windows"
+                  {% if source and source.type_serveur == 'windows' %}selected{% endif %}>
+                  Windows
+                </option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="protocole" class="form-label">Protocole</label>
+              <select class="form-select" id="protocole" name="protocole">
+                <option value="sftp"
+                  {% if not source or source.protocole == 'sftp' %}selected{% endif %}>
+                  SFTP
+                </option>
+                <option value="smb"
+                  {% if source and source.protocole == 'smb' %}selected{% endif %}>
+                  SMB/CIFS
+                </option>
+                <option value="local"
+                  {% if source and source.protocole == 'local' %}selected{% endif %}>
+                  Local / Montage réseau
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="actif" name="actif"
+                     {% if not source or source.actif %}checked{% endif %}>
+              <label class="form-check-label" for="actif">Source active</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connexion -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-plug"></i> Connexion
+        </div>
+        <div class="card-body">
+          <div class="row g-2 mb-3">
+            <div class="col-8">
+              <label for="adresse" class="form-label">Adresse (IP ou hostname)</label>
+              <input type="text" class="form-control" id="adresse" name="adresse"
+                     placeholder="192.168.1.10"
+                     value="{{ source.adresse if source else '' }}">
+            </div>
+            <div class="col-4">
+              <label for="port" class="form-label">Port</label>
+              <input type="number" class="form-control" id="port" name="port"
+                     placeholder="auto"
+                     value="{{ source.port if source else '' }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="chemin_distant" class="form-label">
+              Chemin distant <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control" id="chemin_distant" name="chemin_distant"
+                   placeholder="/home/partage/modes-degrades  ou  \\\\serveur\\partage"
+                   value="{{ source.chemin_distant if source else '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="login" class="form-label">Login</label>
+            <input type="text" class="form-control" id="login" name="login"
+                   autocomplete="username"
+                   placeholder="{{ '(inchangé)' if source else '' }}"
+                   value="">
+          </div>
+          <div class="mb-3">
+            <label for="mot_de_passe" class="form-label">Mot de passe</label>
+            <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe"
+                   autocomplete="current-password"
+                   placeholder="{{ 'Laisser vide pour conserver' if source else '' }}">
+          </div>
+
+          <!-- Test de connexion -->
+          <div class="d-flex align-items-center gap-2 mt-3">
+            <button type="button" class="btn btn-outline-info btn-sm" id="btnTest">
+              <i class="bi bi-plug"></i> Tester la connexion
+            </button>
+            <span id="test-result" class="small"></span>
+          </div>
+          <div class="small text-muted mt-1">
+            {% if not source %}
+              Le test utilise les valeurs saisies (identifiants non chiffrés, non sauvegardés).
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paramètres de collecte -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-gear"></i> Collecte &amp; rétention
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label for="filtre_fichiers" class="form-label">Filtre fichiers</label>
+              <input type="text" class="form-control" id="filtre_fichiers" name="filtre_fichiers"
+                     value="{{ source.filtre_fichiers if source else '*.pdf' }}">
+            </div>
+            <div class="col-6">
+              <label for="frequence_sync_minutes" class="form-label">Fréquence (min)</label>
+              <input type="number" class="form-control" id="frequence_sync_minutes"
+                     name="frequence_sync_minutes" min="1"
+                     value="{{ source.frequence_sync_minutes if source else 60 }}">
+            </div>
+            <div class="col-12">
+              <label for="retention_jours" class="form-label">Rétention (jours)</label>
+              <input type="number" class="form-control" id="retention_jours"
+                     name="retention_jours" min="1"
+                     value="{{ source.retention_jours if source else 90 }}">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seuils de fraîcheur -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-thermometer-half"></i> Seuils de fraîcheur
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label for="seuil_avertissement_jours" class="form-label">
+                <span class="badge bg-warning text-dark me-1">⚠</span>
+                Avertissement (j)
+              </label>
+              <input type="number" class="form-control" id="seuil_avertissement_jours"
+                     name="seuil_avertissement_jours" min="1"
+                     value="{{ source.seuil_avertissement_jours if source else 30 }}">
+            </div>
+            <div class="col-6">
+              <label for="seuil_critique_jours" class="form-label">
+                <span class="badge bg-danger me-1">✕</span>
+                Critique (j)
+              </label>
+              <input type="number" class="form-control" id="seuil_critique_jours"
+                     name="seuil_critique_jours" min="1"
+                     value="{{ source.seuil_critique_jours if source else 60 }}">
+            </div>
+          </div>
+          <div class="alert alert-light small mt-3 mb-0 py-2">
+            <i class="bi bi-info-circle"></i>
+            Un document passe en <span class="text-warning fw-bold">avertissement</span>
+            après X jours sans modification, et en
+            <span class="text-danger fw-bold">critique</span> après Y jours.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i>
+      {{ 'Enregistrer les modifications' if source else 'Créer la source' }}
+    </button>
+    <a href="{{ url_for('sources.detail', source_id=source.id) if source else url_for('sources.index') }}"
+       class="btn btn-outline-secondary">Annuler</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('btnTest').addEventListener('click', function () {
+  const btn = this;
+  const result = document.getElementById('test-result');
+  const form = document.getElementById('sourceForm');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Test…';
+  result.className = 'small';
+  result.textContent = '';
+
+  const data = new FormData(form);
+  // Retire les champs inutiles pour le test
+  data.delete('nom');
+  data.delete('description');
+  data.delete('filtre_fichiers');
+  data.delete('frequence_sync_minutes');
+  data.delete('retention_jours');
+  data.delete('seuil_avertissement_jours');
+  data.delete('seuil_critique_jours');
+
+  fetch('{{ url_for("sources.tester_parametres") }}', {
+    method: 'POST',
+    body: data,
+  })
+  .then(r => r.json())
+  .then(json => {
+    if (json.succes) {
+      result.className = 'small text-success';
+      result.innerHTML = '<i class="bi bi-check-circle"></i> ' + json.message;
+    } else {
+      result.className = 'small text-danger';
+      result.innerHTML = '<i class="bi bi-x-circle"></i> ' + json.message;
+    }
+  })
+  .catch(err => {
+    result.className = 'small text-danger';
+    result.textContent = 'Erreur réseau : ' + err;
+  })
+  .finally(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-plug"></i> Tester la connexion';
+  });
+});
+</script>
+{% endblock %}

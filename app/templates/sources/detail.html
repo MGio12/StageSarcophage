@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}{{ source.nom }} — Sources{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">
+    <i class="bi bi-hdd-network"></i> {{ source.nom }}
+    {% if not source.actif %}
+      <span class="badge bg-secondary ms-2">inactif</span>
+    {% endif %}
+  </h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('sources.modifier', source_id=source.id) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil"></i> Modifier
+    </a>
+    <form method="post"
+          action="{{ url_for('sources.synchroniser', source_id=source.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="bi bi-arrow-repeat"></i> Synchroniser
+      </button>
+    </form>
+    <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Fiche technique -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-info-circle"></i> Paramètres
+      </div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Type</span>
+          <span>{{ source.type_serveur|capitalize }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Protocole</span>
+          <span class="badge bg-light text-dark border">{{ source.protocole|upper }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Adresse</span>
+          <span>{{ source.adresse or '—' }}{% if source.port %}:{{ source.port }}{% endif %}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Chemin</span>
+          <span class="font-monospace small">{{ source.chemin_distant }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Filtre</span>
+          <span class="font-monospace">{{ source.filtre_fichiers }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Fréquence sync</span>
+          <span>{{ source.frequence_sync_minutes }} min</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Rétention</span>
+          <span>{{ source.retention_jours }} jours</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Seuil avertissement</span>
+          <span class="text-warning fw-bold">{{ source.seuil_avertissement_jours }} j</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span class="text-muted">Seuil critique</span>
+          <span class="text-danger fw-bold">{{ source.seuil_critique_jours }} j</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+        <span><i class="bi bi-file-earmark-pdf"></i> Documents ({{ docs|length }})</span>
+        <a href="{{ url_for('documents.index', source_id=source.id) }}"
+           class="btn btn-outline-secondary btn-sm">Voir tout</a>
+      </div>
+      {% if docs %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nom</th>
+              <th>Taille</th>
+              <th>Modifié le</th>
+              <th class="text-center">Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in docs[:20] %}
+            <tr class="statut-{{ doc.statut.value }}">
+              <td class="small fw-medium">{{ doc.nom_fichier }}</td>
+              <td class="small text-muted">{{ doc.taille_octets|format_taille }}</td>
+              <td class="small text-muted">
+                {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '—' }}
+              </td>
+              <td class="text-center">
+                {% if doc.statut.value == 'ok' %}
+                  <span class="badge badge-ok">OK</span>
+                {% elif doc.statut.value == 'avertissement' %}
+                  <span class="badge badge-avertissement">Avertissement</span>
+                {% elif doc.statut.value == 'critique' %}
+                  <span class="badge badge-critique">Critique</span>
+                {% else %}
+                  <span class="badge badge-purge">{{ doc.statut.value }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('documents.voir', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-primary" title="Consulter">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+            {% if docs|length > 20 %}
+            <tr>
+              <td colspan="5" class="text-center text-muted small py-2">
+                … et {{ docs|length - 20 }} autre(s).
+                <a href="{{ url_for('documents.index', source_id=source.id) }}">Voir tout</a>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-muted py-4 small">
+        <i class="bi bi-inbox fs-3"></i>
+        <div class="mt-2">Aucun document collecté pour cette source.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Historique des synchronisations -->
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+    <span><i class="bi bi-clock-history"></i> Historique récent</span>
+    <a href="{{ url_for('journaux.index', source_id=source.id) }}"
+       class="btn btn-outline-secondary btn-sm">Tous les journaux</a>
+  </div>
+  {% if journaux %}
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in journaux %}
+        <tr>
+          <td class="small text-muted text-nowrap">
+            {{ j.created_at.strftime('%d/%m/%Y %H:%M') if j.created_at else '—' }}
+          </td>
+          <td>
+            {% if j.type_evenement.value == 'erreur' %}
+              <span class="badge text-bg-danger">Erreur</span>
+            {% elif j.type_evenement.value == 'sync' %}
+              <span class="badge text-bg-primary">Sync</span>
+            {% elif j.type_evenement.value == 'purge' %}
+              <span class="badge text-bg-warning text-dark">Purge</span>
+            {% elif j.type_evenement.value == 'acces' %}
+              <span class="badge text-bg-secondary">Accès</span>
+            {% else %}
+              <span class="badge text-bg-light text-dark border">
+                {{ j.type_evenement.value }}
+              </span>
+            {% endif %}
+          </td>
+          <td class="small">{{ j.message }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-center text-muted small py-3">
+    Aucun événement enregistré.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

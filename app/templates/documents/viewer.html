@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.nom_fichier }} — Viewer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h5 mb-0 text-truncate" title="{{ doc.nom_fichier }}">
+    <i class="bi bi-file-earmark-pdf text-danger"></i> {{ doc.nom_fichier }}
+  </h1>
+  <div class="d-flex gap-2 flex-shrink-0 ms-2">
+    <a href="{{ url_for('documents.telecharger', doc_id=doc.id) }}"
+       class="btn btn-primary btn-sm">
+      <i class="bi bi-download"></i> Télécharger
+    </a>
+    <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- PDF viewer -->
+  <div class="col-lg-9">
+    <div class="card shadow-sm">
+      <div class="card-body p-1">
+        <iframe src="{{ url_for('documents.pdf_inline', doc_id=doc.id) }}"
+                class="pdf-frame"
+                title="{{ doc.nom_fichier }}">
+          <p class="p-3 text-muted">
+            Votre navigateur ne peut pas afficher ce PDF.
+            <a href="{{ url_for('documents.telecharger', doc_id=doc.id) }}">
+              Téléchargez-le ici.
+            </a>
+          </p>
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Métadonnées -->
+  <div class="col-lg-3">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold small">
+        <i class="bi bi-info-circle"></i> Métadonnées
+      </div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item">
+          <div class="text-muted x-small">Source</div>
+          <div>
+            {% if doc.source %}
+              <a href="{{ url_for('sources.detail', source_id=doc.source.id) }}"
+                 class="text-decoration-none">{{ doc.source.nom }}</a>
+            {% else %}—{% endif %}
+          </div>
+        </li>
+        <li class="list-group-item">
+          <div class="text-muted x-small">Taille</div>
+          <div>{{ doc.taille_octets|format_taille }}</div>
+        </li>
+        <li class="list-group-item">
+          <div class="text-muted x-small">Modifié sur le serveur</div>
+          <div>
+            {{ doc.date_modification_source.strftime('%d/%m/%Y %H:%M')
+               if doc.date_modification_source else '—' }}
+          </div>
+        </li>
+        <li class="list-group-item">
+          <div class="text-muted x-small">Collecté le</div>
+          <div>
+            {{ doc.date_collecte.strftime('%d/%m/%Y %H:%M')
+               if doc.date_collecte else '—' }}
+          </div>
+        </li>
+        <li class="list-group-item">
+          <div class="text-muted x-small">Statut de fraîcheur</div>
+          <div class="mt-1">
+            {% if doc.statut.value == 'ok' %}
+              <span class="badge badge-ok">
+                <i class="bi bi-check-circle"></i> OK
+              </span>
+            {% elif doc.statut.value == 'avertissement' %}
+              <span class="badge badge-avertissement">
+                <i class="bi bi-exclamation-triangle"></i> Avertissement
+              </span>
+            {% elif doc.statut.value == 'critique' %}
+              <span class="badge badge-critique">
+                <i class="bi bi-x-circle"></i> Critique
+              </span>
+            {% else %}
+              <span class="badge badge-purge">{{ doc.statut.value }}</span>
+            {% endif %}
+          </div>
+        </li>
+        {% if doc.hash_sha256 %}
+        <li class="list-group-item">
+          <div class="text-muted x-small">SHA-256</div>
+          <div class="font-monospace x-small text-break">{{ doc.hash_sha256 }}</div>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

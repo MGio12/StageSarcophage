@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Documents — Modes Dégradés{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0"><i class="bi bi-file-earmark-pdf"></i> Documents</h1>
+  <span class="text-muted small">{{ docs_avec_age|length }} document(s)</span>
+</div>
+
+<!-- Barre de filtres -->
+<form method="get" class="card shadow-sm mb-4">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-4 col-lg-3">
+        <label class="form-label small mb-1">Source</label>
+        <select class="form-select form-select-sm" name="source_id">
+          <option value="">Toutes les sources</option>
+          {% for s in sources %}
+          <option value="{{ s.id }}"
+            {% if source_id_filtre == s.id %}selected{% endif %}>
+            {{ s.nom }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-3 col-lg-2">
+        <label class="form-label small mb-1">Statut</label>
+        <select class="form-select form-select-sm" name="statut">
+          <option value="">Tous</option>
+          <option value="ok"            {% if statut_filtre == 'ok' %}selected{% endif %}>OK</option>
+          <option value="avertissement" {% if statut_filtre == 'avertissement' %}selected{% endif %}>Avertissement</option>
+          <option value="critique"      {% if statut_filtre == 'critique' %}selected{% endif %}>Critique</option>
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-4">
+        <label class="form-label small mb-1">Recherche</label>
+        <input type="text" class="form-control form-control-sm" name="q"
+               placeholder="Nom du fichier…"
+               value="{{ q_filtre or '' }}">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-search"></i> Filtrer
+        </button>
+        <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm ms-1">
+          <i class="bi bi-x"></i> Effacer
+        </a>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if docs_avec_age %}
+<form method="post" action="{{ url_for('documents.telecharger_zip') }}" id="formDocs">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <input type="checkbox" id="selectAll" class="form-check-input">
+        <label for="selectAll" class="form-check-label small mb-0">Tout sélectionner</label>
+      </div>
+      <button type="submit" class="btn btn-outline-secondary btn-sm" id="btnZip" disabled>
+        <i class="bi bi-file-zip"></i> Télécharger la sélection (ZIP)
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width:2rem"></th>
+            <th>Nom du fichier</th>
+            <th>Source</th>
+            <th>Modifié le</th>
+            <th>Âge</th>
+            <th>Taille</th>
+            <th class="text-center">Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in docs_avec_age %}
+          {% set doc = item.doc %}
+          {% set age = item.age_jours %}
+          <tr class="statut-{{ doc.statut.value }}">
+            <td>
+              <input type="checkbox" name="doc_ids" value="{{ doc.id }}"
+                     class="form-check-input doc-check">
+            </td>
+            <td class="small fw-medium">{{ doc.nom_fichier }}</td>
+            <td class="small text-muted">
+              {% if doc.source %}
+                <a href="{{ url_for('sources.detail', source_id=doc.source.id) }}"
+                   class="text-decoration-none text-muted">{{ doc.source.nom }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td class="small text-muted text-nowrap">
+              {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '—' }}
+            </td>
+            <td class="small text-nowrap">
+              {% if age is not none %}
+                {{ age }} j
+              {% else %}—{% endif %}
+            </td>
+            <td class="small text-muted">{{ doc.taille_octets|format_taille }}</td>
+            <td class="text-center">
+              {% if doc.statut.value == 'ok' %}
+                <span class="badge badge-ok">OK</span>
+              {% elif doc.statut.value == 'avertissement' %}
+                <span class="badge badge-avertissement">Avert.</span>
+              {% elif doc.statut.value == 'critique' %}
+                <span class="badge badge-critique">Critique</span>
+              {% else %}
+                <span class="badge badge-purge">{{ doc.statut.value }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                <a href="{{ url_for('documents.voir', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-primary" title="Consulter">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('documents.telecharger', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-secondary" title="Télécharger">
+                  <i class="bi bi-download"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+
+{% else %}
+<div class="card shadow-sm">
+  <div class="card-body text-center text-muted py-5">
+    <i class="bi bi-inbox fs-1"></i>
+    <div class="mt-3 fw-medium">Aucun document trouvé</div>
+    {% if source_id_filtre or statut_filtre or q_filtre %}
+      <div class="small">Essayez de modifier les filtres.</div>
+      <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm mt-2">
+        Effacer les filtres
+      </a>
+    {% else %}
+      <div class="small">Aucun document n'a encore été collecté.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const selectAll = document.getElementById('selectAll');
+const checks = document.querySelectorAll('.doc-check');
+const btnZip = document.getElementById('btnZip');
+
+function updateZipBtn() {
+  const nb = document.querySelectorAll('.doc-check:checked').length;
+  if (btnZip) {
+    btnZip.disabled = nb === 0;
+    if (nb > 0) btnZip.textContent = `Télécharger la sélection (${nb}) — ZIP`;
+    else btnZip.innerHTML = '<i class="bi bi-file-zip"></i> Télécharger la sélection (ZIP)';
+  }
+}
+
+if (selectAll) {
+  selectAll.addEventListener('change', function () {
+    checks.forEach(c => c.checked = this.checked);
+    updateZipBtn();
+  });
+}
+checks.forEach(c => c.addEventListener('change', updateZipBtn));
+</script>
+{% endblock %}

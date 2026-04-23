@@ -186,16 +186,16 @@ stageSarcophage/
 | Modèles SQLAlchemy (Source, Document, Journal) | ✅ Terminé | `feat: modèles de données et chiffrement` |
 | Chiffrement Fernet (crypto.py) + tests | ✅ Terminé | `feat: modèles de données et chiffrement` |
 | Authentification (session + mot de passe hashé) | ⬜ À faire | — |
-| CRUD Sources (routes + formulaires) | ⬜ À faire | — |
+| CRUD Sources (routes + formulaires) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
 | Connecteurs SFTP + SMB (services + tests mock) | ✅ Terminé | `feat: implémentation des connecteurs SMB et SFTP` |
 | Sync service (SHA-256, copie, journal) + Purge service + APScheduler | ✅ Terminé | `feat: logique de synchronisation et purge planifiée` |
-| Sync manuelle + dédup SHA-256 | ⬜ À faire | — |
-| Scheduler (APScheduler) | ⬜ À faire | — |
-| Contrôle de fraîcheur + statuts | ⬜ À faire | — |
-| Purge automatique + corbeille | ⬜ À faire | — |
-| Interface consultation documents | ⬜ À faire | — |
-| Journaux + export CSV | ⬜ À faire | — |
-| Dashboard tableau de bord | ⬜ À faire | — |
+| Sync manuelle (bouton par source + global) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
+| Scheduler (APScheduler) | ✅ Terminé | `feat: logique de synchronisation et purge planifiée` |
+| Contrôle de fraîcheur + statuts (code couleur) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
+| Purge automatique + corbeille | ✅ Terminé | `feat: logique de synchronisation et purge planifiée` |
+| Interface consultation documents (filtres, viewer PDF, ZIP) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
+| Journaux + export CSV | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
+| Dashboard tableau de bord | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
 | Docker + docker-compose fonctionnel | ⬜ À faire | — |
 
 ---

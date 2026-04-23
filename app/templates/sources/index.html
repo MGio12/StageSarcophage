@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Sources — Modes Dégradés{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0"><i class="bi bi-hdd-network"></i> Sources</h1>
+  <a href="{{ url_for('sources.nouvelle') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-circle"></i> Nouvelle source
+  </a>
+</div>
+
+{% if sources %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nom</th>
+          <th>Type</th>
+          <th>Protocole</th>
+          <th>Adresse</th>
+          <th class="text-center">Docs</th>
+          <th>Dernière sync</th>
+          <th class="text-center">Actif</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for source in sources %}
+        {% set s = stats[source.id] %}
+        <tr>
+          <td>
+            <a href="{{ url_for('sources.detail', source_id=source.id) }}"
+               class="text-decoration-none fw-medium">{{ source.nom }}</a>
+            {% if source.description %}
+              <div class="text-muted x-small">{{ source.description[:60] }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">
+              {{ source.type_serveur|capitalize }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">
+              {{ source.protocole|upper }}
+            </span>
+          </td>
+          <td class="small text-muted">
+            {{ source.adresse or '—' }}
+            {% if source.port %}<span class="text-secondary">:{{ source.port }}</span>{% endif %}
+          </td>
+          <td class="text-center">{{ s.nb_docs }}</td>
+          <td class="small text-muted">
+            {% if s.derniere_sync %}
+              {{ s.derniere_sync.created_at.strftime('%d/%m/%Y %H:%M') }}
+            {% else %}
+              <em>Jamais</em>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if source.actif %}
+              <span class="badge text-bg-success"><i class="bi bi-circle-fill"></i> Oui</span>
+            {% else %}
+              <span class="badge text-bg-secondary"><i class="bi bi-circle"></i> Non</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{{ url_for('sources.modifier', source_id=source.id) }}"
+                 class="btn btn-outline-secondary btn-sm" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{{ url_for('sources.synchroniser', source_id=source.id) }}"
+                    class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm" title="Synchroniser">
+                  <i class="bi bi-arrow-repeat"></i>
+                </button>
+              </form>
+              <button type="button"
+                      class="btn btn-outline-danger btn-sm"
+                      title="Supprimer"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalSuppr{{ source.id }}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+
+            <!-- Modal de confirmation suppression -->
+            <div class="modal fade" id="modalSuppr{{ source.id }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Supprimer la source</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body small">
+                    Supprimer <strong>{{ source.nom }}</strong> ?
+                    Tous ses documents et journaux seront supprimés.
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            data-bs-dismiss="modal">Annuler</button>
+                    <form method="post"
+                          action="{{ url_for('sources.supprimer', source_id=source.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-hdd-network fs-1"></i>
+    <div class="mt-3 fw-medium">Aucune source configurée</div>
+    <div class="small mb-3">Ajoutez une source pour commencer la collecte de documents.</div>
+    <a href="{{ url_for('sources.nouvelle') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> Ajouter une source
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
