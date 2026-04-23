@@ -47,10 +47,10 @@ stageSarcophage/
 │   │   ├── documents.py     # Consultation (/documents)
 │   │   └── journaux.py      # Logs (/journaux)
 │   ├── services/            # Logique métier (sans dépendance HTTP)
-│   │   ├── sync_service.py  # Orchestration synchronisation
-│   │   ├── sftp_service.py  # Connecteur SFTP (paramiko)
-│   │   ├── smb_service.py   # Connecteur SMB (smbprotocol)
-│   │   └── purge_service.py # Logique de purge
+│   │   ├── smb_service.py   # Connecteur SMB (smbprotocol) — tester_connexion + lister_fichiers
+│   │   ├── sftp_service.py  # Connecteur SFTP (paramiko)  — tester_connexion + lister_fichiers
+│   │   ├── sync_service.py  # Orchestration synchronisation (à faire)
+│   │   └── purge_service.py # Logique de purge (à faire)
 │   ├── scheduler/           # Tâches APScheduler
 │   │   └── tasks.py
 │   ├── utils/
@@ -60,12 +60,15 @@ stageSarcophage/
 ├── instance/                # Config locale + app.db (hors git)
 ├── tests/
 │   ├── conftest.py          # Fixtures pytest (app, db, client)
-│   ├── test_crypto.py       # Tests chiffrement (8 cas)
-│   └── test_models.py       # Tests modèles + tables (17 cas)
+│   ├── test_crypto.py       # Tests chiffrement (9 cas)
+│   ├── test_models.py       # Tests modèles + tables (17 cas)
+│   ├── test_smb_service.py  # Tests connecteur SMB (13 cas, mock smbclient)
+│   └── test_sftp_service.py # Tests connecteur SFTP (13 cas, mock paramiko)
 ├── data/                    # PDF collectés, organisés par source (hors git)
 ├── logs/                    # Logs applicatifs (hors git)
 ├── config.py                # Configs Dev / Prod / Testing
 ├── run.py                   # Point d'entrée
+├── pytest.ini               # testpaths=tests, python_functions=test_*
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
@@ -168,8 +171,7 @@ stageSarcophage/
 | Chiffrement Fernet (crypto.py) + tests | ✅ Terminé | `feat: modèles de données et chiffrement` |
 | Authentification (session + mot de passe hashé) | ⬜ À faire | — |
 | CRUD Sources (routes + formulaires) | ⬜ À faire | — |
-| Service SFTP (paramiko) | ⬜ À faire | — |
-| Service SMB (smbprotocol) | ⬜ À faire | — |
+| Connecteurs SFTP + SMB (services + tests mock) | ✅ Terminé | `feat: implémentation des connecteurs SMB et SFTP` |
 | Sync manuelle + dédup SHA-256 | ⬜ À faire | — |
 | Scheduler (APScheduler) | ⬜ À faire | — |
 | Contrôle de fraîcheur + statuts | ⬜ À faire | — |

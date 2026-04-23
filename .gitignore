@@ -50,6 +50,9 @@ logs/*
 !logs/.gitkeep
 *.log
 
+# === Claude Code ===
+.claude/
+
 # === IDE ===
 .vscode/
 .idea/
