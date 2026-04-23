@@ -25,7 +25,14 @@ def demarrer_scheduler(app) -> None:
     with app.app_context():
         from app.models.source import Source
 
-        for source in Source.query.filter_by(actif=True).all():
+        try:
+            sources = Source.query.filter_by(actif=True).all()
+        except Exception:
+            # BD non encore initialisée (premier démarrage avant flask init-db)
+            logger.warning("Scheduler: table sources absente, aucun job de sync chargé")
+            sources = []
+
+        for source in sources:
             _ajouter_job_sync(source, app)
 
         _scheduler.add_job(

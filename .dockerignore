@@ -1,0 +1,53 @@
+# Environnement Python local
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.so
+
+# Secrets et config locale
+.env
+.env.local
+.env.production
+
+# Base de données locale
+*.db
+*.sqlite
+*.sqlite3
+
+# Données et logs (montés comme volumes)
+data/
+logs/
+instance/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.tox/
+
+# IDE et OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Clés et certificats
+*.pem
+*.key
+*.crt
+*.p12
+
+# Divers
+*.bak
+*.tmp
+.cache/
+.docker/
+.git/
+.claude/

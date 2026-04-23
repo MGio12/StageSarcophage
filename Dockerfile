@@ -1,21 +1,35 @@
 FROM python:3.12-slim
 
+# Utilisateur non-root pour la sécurité
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    smbclient \
-    && rm -rf /var/lib/apt/lists/*
-
+# Dépendances installées en premier (cache Docker optimal)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Script de démarrage
+COPY entrypoint.sh /entrypoint.sh
+# Supprime les CRLF éventuels (fichier édité sous Windows)
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Code applicatif
 COPY . .
 
-RUN mkdir -p /data/modes-degrades /app/instance /app/logs
+# Répertoires avec les bons droits
+RUN mkdir -p /data/modes-degrades /app/instance /app/logs \
+    && chown -R appuser:appuser /app /data/modes-degrades \
+    && chown appuser:appuser /entrypoint.sh
 
-ENV FLASK_ENV=production
-ENV STORAGE_DIR=/data/modes-degrades
+USER appuser
+
+ENV FLASK_ENV=production \
+    FLASK_APP=run.py \
+    STORAGE_DIR=/data/modes-degrades \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 EXPOSE 5000
 
-CMD ["python", "run.py"]
+ENTRYPOINT ["/entrypoint.sh"]
