@@ -23,14 +23,17 @@ class Journal(db.Model):
     source_id = db.Column(
         db.Integer, db.ForeignKey("sources.id", ondelete="SET NULL"), nullable=True
     )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     type_evenement = db.Column(db.Enum(TypeEvenement), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    # JSON sérialisé manuellement — les mots de passe ne doivent jamais figurer ici
     _details = db.Column("details", db.Text, nullable=True)
 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)
 
     source = db.relationship("Source", back_populates="journaux")
+    user = db.relationship("User", backref="journaux")
 
     @property
     def details(self) -> dict | None:

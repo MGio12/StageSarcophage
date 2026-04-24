@@ -33,11 +33,16 @@ class Source(db.Model):
     seuil_avertissement_jours = db.Column(db.Integer, nullable=False, default=30)
     seuil_critique_jours = db.Column(db.Integer, nullable=False, default=60)
     actif = db.Column(db.Boolean, nullable=False, default=True)
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
+
+    @property
+    def est_supprimee(self) -> bool:
+        return self.deleted_at is not None
 
     documents = db.relationship(
         "Document", back_populates="source", cascade="all, delete-orphan", lazy="dynamic"

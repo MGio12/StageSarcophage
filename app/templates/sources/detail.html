@@ -21,6 +21,14 @@
         <i class="bi bi-arrow-repeat"></i> Synchroniser
       </button>
     </form>
+    <form method="post"
+          action="{{ url_for('sources.purger', source_id=source.id) }}"
+          onsubmit="return confirm('Purger les fichiers expirés de cette source ?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-trash"></i> Purger
+      </button>
+    </form>
     <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left"></i> Retour
     </a>

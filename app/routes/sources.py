@@ -1,3 +1,5 @@
+import logging
+
 from flask import (
     Blueprint,
     render_template,
@@ -8,7 +10,11 @@ from flask import (
     jsonify,
     current_app,
 )
-from app.extensions import db
+from flask_login import login_required
+
+from app.extensions import db, limiter
+
+logger = logging.getLogger(__name__)
 from app.models.source import Source
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
@@ -17,8 +23,9 @@ sources_bp = Blueprint("sources", __name__, url_prefix="/sources")
 
 
 @sources_bp.route("/")
+@login_required
 def index():
-    sources = Source.query.order_by(Source.nom).all()
+    sources = Source.query.filter(Source.deleted_at.is_(None)).order_by(Source.nom).all()
     stats = {}
     for s in sources:
         nb = Document.query.filter(
@@ -37,6 +44,7 @@ def index():
 
 
 @sources_bp.route("/nouvelle", methods=["GET", "POST"])
+@login_required
 def nouvelle():
     if request.method == "POST":
         source = _source_depuis_formulaire(None)
@@ -53,6 +61,7 @@ def nouvelle():
 
 
 @sources_bp.route("/<int:source_id>")
+@login_required
 def detail(source_id):
     source = db.get_or_404(Source, source_id)
     docs = (
@@ -75,6 +84,7 @@ def detail(source_id):
 
 
 @sources_bp.route("/<int:source_id>/modifier", methods=["GET", "POST"])
+@login_required
 def modifier(source_id):
     source = db.get_or_404(Source, source_id)
     if request.method == "POST":
@@ -93,19 +103,41 @@ def modifier(source_id):
 
 
 @sources_bp.route("/<int:source_id>/supprimer", methods=["POST"])
+@login_required
 def supprimer(source_id):
+    from datetime import datetime, timezone
     source = db.get_or_404(Source, source_id)
     nom = source.nom
     if not current_app.config.get("TESTING"):
         from app.scheduler.tasks import supprimer_job_source
         supprimer_job_source(source_id)
-    db.session.delete(source)
+    source.actif = False
+    source.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
-    flash(f"Source « {nom} » supprimée.", "info")
+    flash(f"Source « {nom} » archivée.", "info")
     return redirect(url_for("sources.index"))
 
 
+@sources_bp.route("/<int:source_id>/restaurer", methods=["POST"])
+@login_required
+def restaurer(source_id):
+    source = db.get_or_404(Source, source_id)
+    if not source.deleted_at:
+        flash("Cette source n'est pas archivée.", "warning")
+        return redirect(url_for("sources.detail", source_id=source_id))
+    source.deleted_at = None
+    source.actif = True
+    db.session.commit()
+    if not current_app.config.get("TESTING"):
+        from app.scheduler.tasks import planifier_sync_source
+        planifier_sync_source(source, current_app._get_current_object())
+    flash(f"Source « {source.nom} » restaurée.", "success")
+    return redirect(url_for("sources.detail", source_id=source_id))
+
+
 @sources_bp.route("/<int:source_id>/synchroniser", methods=["POST"])
+@login_required
+@limiter.limit("10 per minute")
 def synchroniser(source_id):
     source = db.get_or_404(Source, source_id)
     try:
@@ -123,9 +155,50 @@ def synchroniser(source_id):
     return redirect(request.referrer or url_for("sources.detail", source_id=source_id))
 
 
+@sources_bp.route("/<int:source_id>/purger", methods=["POST"])
+@login_required
+def purger(source_id):
+    """Déclenche manuellement la purge des fichiers expirés pour une source."""
+    source = db.get_or_404(Source, source_id)
+    try:
+        from app.services.purge_service import purger_source
+        resultat = purger_source(source)
+        flash(
+            f"Purge terminée : {resultat.fichiers_purges} fichier(s) purgé(s), "
+            f"{resultat.erreurs} erreur(s).",
+            "success" if resultat.erreurs == 0 else "warning",
+        )
+    except Exception as exc:
+        logger.exception("Erreur purge source %s", source.nom)
+        flash(f"Erreur lors de la purge : {exc}", "danger")
+    return redirect(url_for("sources.detail", source_id=source_id))
+
+
+@sources_bp.route("/<int:source_id>/accepter-fingerprint", methods=["POST"])
+@login_required
+def accepter_fingerprint(source_id):
+    """Accepte et enregistre le fingerprint SSH d'une source SFTP."""
+    source = db.get_or_404(Source, source_id)
+    if source.protocole != "sftp":
+        flash("Cette action n'est disponible que pour les sources SFTP.", "warning")
+        return redirect(url_for("sources.detail", source_id=source_id))
+
+    from app.services.sftp_service import accepter_fingerprint as sftp_accept
+    if sftp_accept(source):
+        flash("Fingerprint SSH accepté et enregistré.", "success")
+    else:
+        flash("Impossible d'accepter le fingerprint.", "danger")
+
+    return redirect(url_for("sources.detail", source_id=source_id))
+
+
 @sources_bp.route("/synchroniser-toutes", methods=["POST"])
+@login_required
 def synchroniser_toutes():
-    sources = Source.query.filter_by(actif=True).all()
+    sources = Source.query.filter(
+        Source.actif == True,
+        Source.deleted_at.is_(None)
+    ).all()
     total_copies = 0
     total_erreurs = 0
     for source in sources:
@@ -137,6 +210,7 @@ def synchroniser_toutes():
             total_copies += resultat.fichiers_copies
             total_erreurs += resultat.erreurs
         except Exception:
+            logger.exception("Erreur sync source %s", source.nom)
             total_erreurs += 1
     flash(
         f"Synchronisation globale : {total_copies} fichier(s) copié(s), "
@@ -147,6 +221,8 @@ def synchroniser_toutes():
 
 
 @sources_bp.route("/tester-parametres", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
 def tester_parametres():
     """Test de connexion AJAX avec les valeurs du formulaire (sans source en BD)."""
     protocole = request.form.get("protocole", "sftp")
@@ -172,14 +248,30 @@ def tester_parametres():
         source_temp.filtre_fichiers = request.form.get("filtre_fichiers", "*.pdf").strip() or "*.pdf"
 
         resultat = tester_connexion(source_temp)
-        return jsonify(
-            {"succes": resultat.succes, "message": resultat.message, "nb_fichiers": resultat.nb_fichiers}
-        )
+        response = {
+            "succes": resultat.succes,
+            "message": resultat.message,
+            "nb_fichiers": resultat.nb_fichiers,
+        }
+        if resultat.fingerprint_nouveau:
+            response["fingerprint_nouveau"] = resultat.fingerprint_nouveau
+            response["fingerprint_key_type"] = resultat.fingerprint_key_type
+        return jsonify(response)
     except Exception as exc:
         return jsonify({"succes": False, "message": str(exc)})
 
 
 # ---------------------------------------------------------------------------
+
+
+def _parse_int_borne(valeur: str | None, defaut: int, mini: int, maxi: int) -> int:
+    """Parse une chaîne en entier, avec défaut et bornes min/max."""
+    try:
+        n = int(valeur) if valeur else defaut
+    except (ValueError, TypeError):
+        return defaut
+    return max(mini, min(maxi, n))
+
 
 def _source_depuis_formulaire(source: Source | None) -> Source | None:
     nom = request.form.get("nom", "").strip()
@@ -199,10 +291,18 @@ def _source_depuis_formulaire(source: Source | None) -> Source | None:
     source.port = int(port_val) if port_val.isdigit() else None
     source.chemin_distant = request.form.get("chemin_distant", "").strip()
     source.filtre_fichiers = request.form.get("filtre_fichiers", "*.pdf").strip() or "*.pdf"
-    source.frequence_sync_minutes = int(request.form.get("frequence_sync_minutes") or 60)
-    source.retention_jours = int(request.form.get("retention_jours") or 90)
-    source.seuil_avertissement_jours = int(request.form.get("seuil_avertissement_jours") or 30)
-    source.seuil_critique_jours = int(request.form.get("seuil_critique_jours") or 60)
+    source.frequence_sync_minutes = _parse_int_borne(
+        request.form.get("frequence_sync_minutes"), defaut=60, mini=1, maxi=525600
+    )
+    source.retention_jours = _parse_int_borne(
+        request.form.get("retention_jours"), defaut=90, mini=1, maxi=3650
+    )
+    source.seuil_avertissement_jours = _parse_int_borne(
+        request.form.get("seuil_avertissement_jours"), defaut=30, mini=1, maxi=3650
+    )
+    source.seuil_critique_jours = _parse_int_borne(
+        request.form.get("seuil_critique_jours"), defaut=60, mini=1, maxi=3650
+    )
     source.actif = "actif" in request.form
 
     login_val = request.form.get("login", "").strip()

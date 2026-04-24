@@ -32,18 +32,28 @@
           <option value="critique"      {% if statut_filtre == 'critique' %}selected{% endif %}>Critique</option>
         </select>
       </div>
-      <div class="col-sm-4 col-lg-4">
+      <div class="col-sm-3 col-lg-3">
         <label class="form-label small mb-1">Recherche</label>
         <input type="text" class="form-control form-control-sm" name="q"
                placeholder="Nom du fichier…"
                value="{{ q_filtre or '' }}">
+      </div>
+      <div class="col-sm-2 col-lg-2">
+        <label class="form-label small mb-1">Depuis</label>
+        <input type="date" class="form-control form-control-sm" name="depuis"
+               value="{{ depuis_filtre or '' }}">
+      </div>
+      <div class="col-sm-2 col-lg-2">
+        <label class="form-label small mb-1">Jusqu'au</label>
+        <input type="date" class="form-control form-control-sm" name="jusqua"
+               value="{{ jusqua_filtre or '' }}">
       </div>
       <div class="col-auto">
         <button type="submit" class="btn btn-primary btn-sm">
           <i class="bi bi-search"></i> Filtrer
         </button>
         <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm ms-1">
-          <i class="bi bi-x"></i> Effacer
+          <i class="bi bi-x"></i>
         </a>
       </div>
     </div>
@@ -139,7 +149,7 @@
   <div class="card-body text-center text-muted py-5">
     <i class="bi bi-inbox fs-1"></i>
     <div class="mt-3 fw-medium">Aucun document trouvé</div>
-    {% if source_id_filtre or statut_filtre or q_filtre %}
+    {% if source_id_filtre or statut_filtre or q_filtre or depuis_filtre or jusqua_filtre %}
       <div class="small">Essayez de modifier les filtres.</div>
       <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm mt-2">
         Effacer les filtres

@@ -74,6 +74,7 @@
           <th class="text-nowrap">Date</th>
           <th>Type</th>
           <th>Source</th>
+          <th>Utilisateur</th>
           <th>Message</th>
         </tr>
       </thead>
@@ -105,6 +106,9 @@
               <a href="{{ url_for('sources.detail', source_id=j.source.id) }}"
                  class="text-decoration-none text-muted">{{ j.source.nom }}</a>
             {% else %}—{% endif %}
+          </td>
+          <td class="small text-muted">
+            {% if j.user %}{{ j.user.username }}{% else %}—{% endif %}
           </td>
           <td class="small">{{ j.message }}</td>
         </tr>

@@ -6,7 +6,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-change-in-production"
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
     )
@@ -35,6 +35,20 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+
+
+def validate_production_config():
+    """Vérifie que les secrets requis sont configurés en production."""
+    if not os.environ.get("SECRET_KEY"):
+        raise RuntimeError("SECRET_KEY doit être définie en production")
+    encryption_key = os.environ.get("ENCRYPTION_KEY")
+    if not encryption_key:
+        raise RuntimeError("ENCRYPTION_KEY doit être définie en production")
+    from cryptography.fernet import Fernet, InvalidToken
+    try:
+        Fernet(encryption_key.encode())
+    except (ValueError, InvalidToken) as e:
+        raise RuntimeError(f"ENCRYPTION_KEY invalide (doit être une clé Fernet valide) : {e}")
 
 
 class TestingConfig(Config):

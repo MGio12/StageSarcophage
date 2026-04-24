@@ -1,11 +1,12 @@
-import io
 import os
+import tempfile
 import zipfile
 from datetime import datetime, timezone
 
 from flask import (
     Blueprint,
     abort,
+    after_this_request,
     current_app,
     redirect,
     render_template,
@@ -14,6 +15,7 @@ from flask import (
     url_for,
     flash,
 )
+from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models.document import Document, StatutDocument
@@ -24,6 +26,7 @@ documents_bp = Blueprint("documents", __name__, url_prefix="/documents")
 
 
 @documents_bp.route("/")
+@login_required
 def index():
     sources = Source.query.order_by(Source.nom).all()
 
@@ -42,7 +45,24 @@ def index():
 
     q = request.args.get("q", "").strip()
     if q:
-        query = query.filter(Document.nom_fichier.ilike(f"%{q}%"))
+        q_escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        query = query.filter(Document.nom_fichier.ilike(f"%{q_escaped}%", escape="\\"))
+
+    depuis = request.args.get("depuis", "").strip()
+    if depuis:
+        try:
+            query = query.filter(Document.date_modification_source >= datetime.fromisoformat(depuis))
+        except ValueError:
+            pass
+
+    jusqua = request.args.get("jusqua", "").strip()
+    if jusqua:
+        try:
+            query = query.filter(
+                Document.date_modification_source <= datetime.fromisoformat(f"{jusqua}T23:59:59")
+            )
+        except ValueError:
+            pass
 
     docs = query.order_by(Document.nom_fichier).all()
 
@@ -64,16 +84,19 @@ def index():
         source_id_filtre=source_id,
         statut_filtre=statut,
         q_filtre=q,
+        depuis_filtre=depuis,
+        jusqua_filtre=jusqua,
     )
 
 
 @documents_bp.route("/<int:doc_id>/voir")
+@login_required
 def voir(doc_id):
     doc = db.get_or_404(Document, doc_id)
-    if not os.path.exists(doc.chemin_local):
-        abort(404)
+    _verifier_chemin(doc.chemin_local)
     entree = Journal(
         source_id=doc.source_id,
+        user_id=current_user.id,
         type_evenement=TypeEvenement.ACCES,
         message=f"Consultation : {doc.nom_fichier}",
     )
@@ -83,12 +106,13 @@ def voir(doc_id):
 
 
 @documents_bp.route("/<int:doc_id>/telecharger")
+@login_required
 def telecharger(doc_id):
     doc = db.get_or_404(Document, doc_id)
-    if not os.path.exists(doc.chemin_local):
-        abort(404)
+    _verifier_chemin(doc.chemin_local)
     entree = Journal(
         source_id=doc.source_id,
+        user_id=current_user.id,
         type_evenement=TypeEvenement.ACCES,
         message=f"Téléchargement : {doc.nom_fichier}",
     )
@@ -103,6 +127,7 @@ def telecharger(doc_id):
 
 
 @documents_bp.route("/pdf/<int:doc_id>")
+@login_required
 def pdf_inline(doc_id):
     """Sert le PDF en ligne pour l'affichage dans l'iframe du viewer."""
     doc = db.get_or_404(Document, doc_id)
@@ -114,11 +139,20 @@ def pdf_inline(doc_id):
     )
 
 
+MAX_ZIP_DOCS = 100
+MAX_ZIP_OCTETS = 500 * 1024 * 1024  # 500 Mo
+
+
 @documents_bp.route("/telecharger-zip", methods=["POST"])
+@login_required
 def telecharger_zip():
     ids = request.form.getlist("doc_ids", type=int)
     if not ids:
         flash("Aucun document sélectionné.", "warning")
+        return redirect(url_for("documents.index"))
+
+    if len(ids) > MAX_ZIP_DOCS:
+        flash(f"Maximum {MAX_ZIP_DOCS} documents par téléchargement.", "warning")
         return redirect(url_for("documents.index"))
 
     docs = Document.query.filter(Document.id.in_(ids)).all()
@@ -128,8 +162,13 @@ def telecharger_zip():
         flash("Aucun fichier disponible pour le téléchargement.", "warning")
         return redirect(url_for("documents.index"))
 
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+    taille_totale = sum(d.taille_octets or 0 for d in docs_valides)
+    if taille_totale > MAX_ZIP_OCTETS:
+        flash(f"Taille totale trop importante (max 500 Mo).", "warning")
+        return redirect(url_for("documents.index"))
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
         noms_vus: dict[str, int] = {}
         for doc in docs_valides:
             nom = doc.nom_fichier
@@ -138,9 +177,16 @@ def telecharger_zip():
                 nom = f"{base}_{doc.source_id}{ext}"
             noms_vus[nom] = 1
             zf.write(doc.chemin_local, nom)
-    buf.seek(0)
+    tmp.close()
+
+    @after_this_request
+    def _cleanup(response):
+        if os.path.exists(tmp.name):
+            os.unlink(tmp.name)
+        return response
+
     return send_file(
-        buf,
+        tmp.name,
         as_attachment=True,
         download_name="modes_degrades.zip",
         mimetype="application/zip",

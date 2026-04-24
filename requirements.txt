@@ -5,6 +5,10 @@ gunicorn==23.0.0
 Flask==3.1.1
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.2
+Flask-Login==0.6.3
+
+# Hachage des mots de passe
+bcrypt==4.2.0
 
 # Scheduler de tâches de fond
 APScheduler==3.10.4
@@ -21,6 +25,7 @@ cryptography==44.0.3
 # Gestion des variables d'environnement
 python-dotenv==1.0.1
 
-# Tests
-pytest==8.3.5
-pytest-flask==1.3.0
+# Sécurité
+Flask-Limiter==3.8.0
+Flask-Talisman==1.1.0
+

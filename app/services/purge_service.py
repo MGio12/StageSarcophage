@@ -92,17 +92,26 @@ def purger_source(source) -> ResultatPurge:
 
 
 def _purger_document(doc: Document, dossier_corbeille: str) -> None:
-    if os.path.exists(doc.chemin_local):
+    chemin_origine = doc.chemin_local
+    dest = None
+
+    if os.path.exists(chemin_origine):
         os.makedirs(dossier_corbeille, exist_ok=True)
         dest = os.path.join(dossier_corbeille, doc.nom_fichier)
         if os.path.exists(dest):
             base, ext = os.path.splitext(doc.nom_fichier)
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             dest = os.path.join(dossier_corbeille, f"{base}_{ts}{ext}")
-        shutil.move(doc.chemin_local, dest)
+        shutil.move(chemin_origine, dest)
 
     doc.statut = StatutDocument.PURGE
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        if dest and os.path.exists(dest):
+            shutil.move(dest, chemin_origine)
+        raise
 
 
 def _journaliser_purge(source, result: ResultatPurge) -> None:

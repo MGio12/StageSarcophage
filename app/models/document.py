@@ -16,6 +16,9 @@ class StatutDocument(enum.Enum):
 
 class Document(db.Model):
     __tablename__ = "documents"
+    __table_args__ = (
+        db.UniqueConstraint("source_id", "nom_fichier", name="uq_source_nom_fichier"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     source_id = db.Column(

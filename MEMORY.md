@@ -185,7 +185,7 @@ stageSarcophage/
 | Initialisation structure + Hello World | ✅ Terminé | `chore: initialisation du projet et architecture` |
 | Modèles SQLAlchemy (Source, Document, Journal) | ✅ Terminé | `feat: modèles de données et chiffrement` |
 | Chiffrement Fernet (crypto.py) + tests | ✅ Terminé | `feat: modèles de données et chiffrement` |
-| Authentification (session + mot de passe hashé) | ⬜ À faire | — |
+| Authentification (session + mot de passe hashé) | ✅ Terminé | Flask-Login + bcrypt |
 | CRUD Sources (routes + formulaires) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
 | Connecteurs SFTP + SMB (services + tests mock) | ✅ Terminé | `feat: implémentation des connecteurs SMB et SFTP` |
 | Sync service (SHA-256, copie, journal) + Purge service + APScheduler | ✅ Terminé | `feat: logique de synchronisation et purge planifiée` |
@@ -196,7 +196,7 @@ stageSarcophage/
 | Interface consultation documents (filtres, viewer PDF, ZIP) | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
 | Journaux + export CSV | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
 | Dashboard tableau de bord | ✅ Terminé | `feat: interface utilisateur et routes Flask` |
-| Docker + docker-compose fonctionnel | ⬜ À faire | — |
+| Docker + docker-compose fonctionnel | ✅ Terminé | `chore: dockerisation de l'application` |
 
 ---
 

@@ -1,5 +1,13 @@
 # Cahier des charges — Application de gestion des documents de modes dégradés
 
+> **⚠️ DOCUMENT DE RÉFÉRENCE — NE PAS MODIFIER ⚠️**
+>
+> Ce cahier des charges a été fourni par le maître de stage (DSI — CLCC).
+> Il constitue le document de référence officiel du projet et ne doit en aucun cas être modifié.
+> Toute évolution ou clarification doit être documentée séparément.
+
+---
+
 ## Centre de Lutte Contre le Cancer
 
 > **Version** : 1.0

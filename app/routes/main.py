@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template
+from flask_login import login_required
+
 from app.extensions import db
 from app.models.document import Document, StatutDocument
 from app.models.source import Source
@@ -8,6 +10,7 @@ main_bp = Blueprint("main", __name__)
 
 
 @main_bp.route("/")
+@login_required
 def dashboard():
     total = Document.query.filter(Document.statut != StatutDocument.PURGE).count()
     nb_ok = Document.query.filter_by(statut=StatutDocument.OK).count()

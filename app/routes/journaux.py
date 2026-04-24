@@ -3,10 +3,12 @@ import io
 from datetime import datetime
 
 from flask import Blueprint, Response, render_template, request
+from flask_login import login_required
 
 from app.extensions import db
 from app.models.journal import Journal, TypeEvenement
 from app.models.source import Source
+from app.models.user import User
 
 journaux_bp = Blueprint("journaux", __name__, url_prefix="/journaux")
 
@@ -43,6 +45,7 @@ def _appliquer_filtres(query):
 
 
 @journaux_bp.route("/")
+@login_required
 def index():
     sources = Source.query.order_by(Source.nom).all()
     query = _appliquer_filtres(Journal.query)
@@ -64,21 +67,26 @@ def index():
 
 
 @journaux_bp.route("/export.csv")
+@login_required
 def export_csv():
     sources = Source.query.order_by(Source.nom).all()
     source_map = {s.id: s.nom for s in sources}
+
+    users = User.query.all()
+    user_map = {u.id: u.username for u in users}
 
     query = _appliquer_filtres(Journal.query)
     journaux = query.order_by(Journal.created_at.desc()).limit(10000).all()
 
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=";")
-    writer.writerow(["Date", "Type", "Source", "Message"])
+    writer.writerow(["Date", "Type", "Source", "Utilisateur", "Message"])
     for j in journaux:
         writer.writerow([
             j.created_at.strftime("%Y-%m-%d %H:%M:%S") if j.created_at else "",
             j.type_evenement.value,
             source_map.get(j.source_id, "") if j.source_id else "",
+            user_map.get(j.user_id, "") if j.user_id else "",
             j.message,
         ])
 

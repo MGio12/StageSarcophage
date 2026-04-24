@@ -39,6 +39,28 @@ def _slugify(texte: str) -> str:
     return re.sub(r"_+", "_", texte).strip("_") or "source"
 
 
+def _safe_filename(nom: str) -> str:
+    """Nettoie un nom de fichier pour éviter les attaques path traversal."""
+    # Supprime les caractères nuls
+    nom = nom.replace("\x00", "")
+    # Normalise les séparateurs Windows en /
+    nom = nom.replace("\\", "/")
+    # Extrait uniquement le nom de fichier (supprime tout chemin)
+    nom = os.path.basename(nom)
+    # Refuse les fichiers cachés ou vides
+    if not nom or nom.startswith("."):
+        raise ValueError(f"Nom de fichier invalide : {nom!r}")
+    return nom
+
+
+def _verifier_chemin_storage(chemin: str, storage_dir: str) -> None:
+    """Vérifie que le chemin est bien dans le répertoire de stockage."""
+    chemin_reel = os.path.realpath(chemin)
+    storage_reel = os.path.realpath(storage_dir)
+    if not chemin_reel.startswith(storage_reel + os.sep):
+        raise ValueError(f"Tentative de path traversal détectée : {chemin!r}")
+
+
 def _dossier_local_source(source) -> str:
     storage = current_app.config["STORAGE_DIR"]
     return os.path.join(storage, f"{source.id}_{_slugify(source.nom)}")
@@ -127,10 +149,14 @@ def synchroniser_source(source) -> ResultatSync:
 
 def _traiter_fichier(source, f_distant, dossier_local: str, fn_telecharger) -> str:
     """Copie le fichier si nécessaire. Retourne 'copie' ou 'ignore'."""
-    chemin_local = os.path.join(dossier_local, f_distant.nom)
+    # Sanitize le nom de fichier pour éviter les path traversal
+    nom_safe = _safe_filename(f_distant.nom)
+    chemin_local = os.path.join(dossier_local, nom_safe)
+    # Vérifie que le chemin final est bien dans le storage
+    _verifier_chemin_storage(chemin_local, current_app.config["STORAGE_DIR"])
 
     doc: Document | None = Document.query.filter_by(
-        source_id=source.id, nom_fichier=f_distant.nom
+        source_id=source.id, nom_fichier=nom_safe
     ).first()
 
     # Optimisation : même date de modification + même taille → pas de téléchargement
@@ -140,7 +166,7 @@ def _traiter_fichier(source, f_distant, dossier_local: str, fn_telecharger) -> s
             return "ignore"
 
     # Téléchargement dans un fichier temporaire pour éviter les écritures partielles
-    fd, chemin_tmp = tempfile.mkstemp(dir=dossier_local, prefix=f".tmp_{f_distant.nom}_")
+    fd, chemin_tmp = tempfile.mkstemp(dir=dossier_local, prefix=f".tmp_{nom_safe}_")
     os.close(fd)
     try:
         fn_telecharger(source, f_distant, chemin_tmp)
@@ -158,7 +184,7 @@ def _traiter_fichier(source, f_distant, dossier_local: str, fn_telecharger) -> s
 
     maintenant = datetime.now(timezone.utc)
     if doc is None:
-        doc = Document(source_id=source.id, nom_fichier=f_distant.nom, chemin_local=chemin_local)
+        doc = Document(source_id=source.id, nom_fichier=nom_safe, chemin_local=chemin_local)
         db.session.add(doc)
 
     doc.chemin_local = chemin_local
