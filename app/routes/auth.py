@@ -2,16 +2,49 @@
 Routes d'authentification.
 
 Section 2.6 du CDC — accès protégé par mot de passe.
+Phase 2 — authentification LDAP/AD avec fallback local.
 """
+import logging
 from datetime import datetime, timezone
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db, limiter
 from app.models.user import User
+from app.models.role import Role
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _authentifier_utilisateur(username: str, password: str):
+    """
+    Tente d'authentifier l'utilisateur via LDAP puis en local.
+
+    Returns:
+        User ou None
+    """
+    if current_app.config.get("LDAP_ENABLED"):
+        from app.services.ldap_service import authentifier_ldap, get_ldap_config
+        if authentifier_ldap(username, password):
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                config = get_ldap_config()
+                default_role = Role.query.filter_by(nom=config.default_role).first()
+                user = User(username=username, role=default_role)
+                user.set_password(password)
+                db.session.add(user)
+                db.session.commit()
+                logger.info("Utilisateur LDAP cree localement : %s", username)
+            return user
+
+    user = User.query.filter_by(username=username).first()
+    if user and user.is_active and user.check_password(password):
+        return user
+
+    return None
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -24,9 +57,9 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        user = User.query.filter_by(username=username).first()
+        user = _authentifier_utilisateur(username, password)
 
-        if user and user.is_active and user.check_password(password):
+        if user and user.is_active:
             user.last_login = datetime.now(timezone.utc)
             db.session.commit()
             login_user(user, remember=request.form.get("remember"))

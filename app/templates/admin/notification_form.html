@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{% if config %}Modifier{% else %}Nouveau{% endif %} destinataire — Administration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-bell"></i>
+          {% if config %}Modifier le destinataire{% else %}Nouveau destinataire{% endif %}
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Adresse email *</label>
+            <input type="email" class="form-control" id="email" name="email"
+                   value="{{ config.email if config else '' }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="user_id" class="form-label">Utilisateur associe (optionnel)</label>
+            <select class="form-select" id="user_id" name="user_id">
+              <option value="">— Aucun —</option>
+              {% for user in users %}
+              <option value="{{ user.id }}"
+                      {% if config and config.user_id == user.id %}selected{% endif %}>
+                {{ user.username }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Types de notifications</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="notif_erreurs"
+                     name="notif_erreurs" {% if not config or config.notif_erreurs %}checked{% endif %}>
+              <label class="form-check-label" for="notif_erreurs">
+                Erreurs de connexion (apres 3 echecs consecutifs)
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="notif_critiques"
+                     name="notif_critiques" {% if not config or config.notif_critiques %}checked{% endif %}>
+              <label class="form-check-label" for="notif_critiques">
+                Documents critiques (depassement du seuil)
+              </label>
+            </div>
+          </div>
+
+          {% if config %}
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="actif"
+                     name="actif" {% if config.actif %}checked{% endif %}>
+              <label class="form-check-label" for="actif">
+                Actif
+              </label>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg"></i> {% if config %}Enregistrer{% else %}Ajouter{% endif %}
+            </button>
+            <a href="{{ url_for('admin.notifications') }}" class="btn btn-outline-secondary">
+              Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

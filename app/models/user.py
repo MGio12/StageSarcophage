@@ -24,6 +24,9 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)
     last_login = db.Column(db.DateTime(timezone=True), nullable=True)
+    role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True)
+
+    role = db.relationship("Role", back_populates="users")
 
     def set_password(self, password: str) -> None:
         """Hache le mot de passe avec bcrypt."""
@@ -36,6 +39,16 @@ class User(UserMixin, db.Model):
         return bcrypt.checkpw(
             password.encode("utf-8"), self.password_hash.encode("utf-8")
         )
+
+    def has_permission(self, permission: str) -> bool:
+        """Vérifie si l'utilisateur possède une permission via son rôle."""
+        if not self.role:
+            return False
+        return self.role.has_permission(permission)
+
+    def is_admin(self) -> bool:
+        """Vérifie si l'utilisateur est administrateur."""
+        return self.role and self.role.nom == "admin"
 
     def __repr__(self) -> str:
         return f"<User id={self.id} username={self.username!r}>"

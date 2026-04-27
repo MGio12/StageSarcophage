@@ -29,3 +29,10 @@ python-dotenv==1.0.1
 Flask-Limiter==3.8.0
 Flask-Talisman==1.1.0
 
+# Export de rapports
+openpyxl==3.1.2
+reportlab==4.2.0
+
+# LDAP / Active Directory
+ldap3==2.9.1
+

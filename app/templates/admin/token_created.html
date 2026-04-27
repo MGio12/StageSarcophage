@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Token cree — Administration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-success">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Token « {{ nom }} » cree avec succes</h5>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          <strong>Important :</strong> Copiez ce token maintenant. Il ne sera plus affiche apres cette page.
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold">Votre token API :</label>
+          <div class="input-group">
+            <input type="text" class="form-control font-monospace" id="token-value"
+                   value="{{ token }}" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="copyToken()">
+              <i class="bi bi-clipboard"></i> Copier
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold">Exemple d'utilisation :</label>
+          <pre class="bg-dark text-light p-3 rounded"><code>curl -H "Authorization: Bearer {{ token }}" \
+     {{ request.host_url }}api/v1/health</code></pre>
+        </div>
+
+        <a href="{{ url_for('admin.tokens') }}" class="btn btn-primary">
+          <i class="bi bi-arrow-left"></i> Retour a la liste des tokens
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToken() {
+  const input = document.getElementById('token-value');
+  input.select();
+  document.execCommand('copy');
+  const btn = event.target.closest('button');
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '<i class="bi bi-check"></i> Copie !';
+  setTimeout(() => btn.innerHTML = originalHTML, 2000);
+}
+</script>
+{% endblock %}

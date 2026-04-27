@@ -13,6 +13,7 @@ from flask import (
 from flask_login import login_required
 
 from app.extensions import db, limiter
+from app.utils.decorators import require_permission
 
 logger = logging.getLogger(__name__)
 from app.models.source import Source
@@ -24,6 +25,7 @@ sources_bp = Blueprint("sources", __name__, url_prefix="/sources")
 
 @sources_bp.route("/")
 @login_required
+@require_permission("sources.view")
 def index():
     sources = Source.query.filter(Source.deleted_at.is_(None)).order_by(Source.nom).all()
     stats = {}
@@ -45,6 +47,7 @@ def index():
 
 @sources_bp.route("/nouvelle", methods=["GET", "POST"])
 @login_required
+@require_permission("sources.edit")
 def nouvelle():
     if request.method == "POST":
         source = _source_depuis_formulaire(None)
@@ -62,6 +65,7 @@ def nouvelle():
 
 @sources_bp.route("/<int:source_id>")
 @login_required
+@require_permission("sources.view")
 def detail(source_id):
     source = db.get_or_404(Source, source_id)
     docs = (
@@ -85,6 +89,7 @@ def detail(source_id):
 
 @sources_bp.route("/<int:source_id>/modifier", methods=["GET", "POST"])
 @login_required
+@require_permission("sources.edit")
 def modifier(source_id):
     source = db.get_or_404(Source, source_id)
     if request.method == "POST":
@@ -104,6 +109,7 @@ def modifier(source_id):
 
 @sources_bp.route("/<int:source_id>/supprimer", methods=["POST"])
 @login_required
+@require_permission("sources.delete")
 def supprimer(source_id):
     from datetime import datetime, timezone
     source = db.get_or_404(Source, source_id)
@@ -120,6 +126,7 @@ def supprimer(source_id):
 
 @sources_bp.route("/<int:source_id>/restaurer", methods=["POST"])
 @login_required
+@require_permission("sources.edit")
 def restaurer(source_id):
     source = db.get_or_404(Source, source_id)
     if not source.deleted_at:
@@ -137,6 +144,7 @@ def restaurer(source_id):
 
 @sources_bp.route("/<int:source_id>/synchroniser", methods=["POST"])
 @login_required
+@require_permission("sources.sync")
 @limiter.limit("10 per minute")
 def synchroniser(source_id):
     source = db.get_or_404(Source, source_id)
@@ -157,6 +165,7 @@ def synchroniser(source_id):
 
 @sources_bp.route("/<int:source_id>/purger", methods=["POST"])
 @login_required
+@require_permission("sources.purge")
 def purger(source_id):
     """Déclenche manuellement la purge des fichiers expirés pour une source."""
     source = db.get_or_404(Source, source_id)
@@ -176,6 +185,7 @@ def purger(source_id):
 
 @sources_bp.route("/<int:source_id>/accepter-fingerprint", methods=["POST"])
 @login_required
+@require_permission("sources.edit")
 def accepter_fingerprint(source_id):
     """Accepte et enregistre le fingerprint SSH d'une source SFTP."""
     source = db.get_or_404(Source, source_id)
@@ -194,6 +204,7 @@ def accepter_fingerprint(source_id):
 
 @sources_bp.route("/synchroniser-toutes", methods=["POST"])
 @login_required
+@require_permission("sources.sync")
 def synchroniser_toutes():
     sources = Source.query.filter(
         Source.actif == True,

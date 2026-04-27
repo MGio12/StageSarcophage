@@ -6,6 +6,7 @@ from flask import Blueprint, Response, render_template, request
 from flask_login import login_required
 
 from app.extensions import db
+from app.utils.decorators import require_permission
 from app.models.journal import Journal, TypeEvenement
 from app.models.source import Source
 from app.models.user import User
@@ -46,6 +47,7 @@ def _appliquer_filtres(query):
 
 @journaux_bp.route("/")
 @login_required
+@require_permission("journal.view")
 def index():
     sources = Source.query.order_by(Source.nom).all()
     query = _appliquer_filtres(Journal.query)
@@ -68,6 +70,7 @@ def index():
 
 @journaux_bp.route("/export.csv")
 @login_required
+@require_permission("journal.view")
 def export_csv():
     sources = Source.query.order_by(Source.nom).all()
     source_map = {s.id: s.nom for s in sources}

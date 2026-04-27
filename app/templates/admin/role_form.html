@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% if role %}Modifier role{% else %}Nouveau role{% endif %} — Administration{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{{ url_for('admin.roles') }}" class="text-decoration-none">
+    <i class="bi bi-arrow-left"></i> Retour aux roles
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <i class="bi bi-shield-lock"></i>
+      {% if role %}Modifier le role « {{ role.nom }} »{% else %}Nouveau role{% endif %}
+    </h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% if not role %}
+      <div class="mb-3">
+        <label for="nom" class="form-label">Nom du role <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="nom" name="nom" required
+               pattern="[a-z0-9_]+" title="Lettres minuscules, chiffres et underscores uniquement"
+               placeholder="ex: operateur, superviseur">
+        <div class="form-text">Lettres minuscules, chiffres et underscores uniquement.</div>
+      </div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <input type="text" class="form-control" id="description" name="description"
+               value="{{ role.description if role else '' }}"
+               placeholder="Description du role">
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold">Permissions</label>
+        <div class="row">
+          {% for perm_key, perm_label in permissions.items() %}
+          <div class="col-md-6 col-lg-4 mb-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     id="perm_{{ perm_key }}" name="perm_{{ perm_key }}"
+                     {% if role and role.permissions.get(perm_key) %}checked{% endif %}>
+              <label class="form-check-label" for="perm_{{ perm_key }}">
+                {{ perm_label }}
+                <br><small class="text-muted">{{ perm_key }}</small>
+              </label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check"></i> Enregistrer
+        </button>
+        <a href="{{ url_for('admin.roles') }}" class="btn btn-secondary">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

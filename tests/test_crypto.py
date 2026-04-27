@@ -1,3 +1,4 @@
+
 """Tests unitaires du module de chiffrement (app/utils/crypto.py)."""
 
 import pytest

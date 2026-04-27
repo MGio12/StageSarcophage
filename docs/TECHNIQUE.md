@@ -41,6 +41,9 @@
 | **smbprotocol** | Connexions SMB |
 | **Fernet** | Chiffrement des identifiants sources |
 | **bcrypt** | Hachage des mots de passe utilisateurs |
+| **ldap3** | Authentification LDAP / Active Directory |
+| **openpyxl** | Export rapports Excel |
+| **reportlab** | Export rapports PDF |
 
 ---
 
@@ -48,48 +51,52 @@
 
 ```
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     users       │       │     sources     │       │  ssh_fingerprints│
+│     roles       │       │     users       │       │   api_tokens    │
 ├─────────────────┤       ├─────────────────┤       ├─────────────────┤
-│ id (PK)         │       │ id (PK)         │◄──────│ source_id (FK)  │
-│ username        │       │ nom             │       │ hostname        │
-│ password_hash   │       │ description     │       │ port            │
-│ is_active       │       │ type_serveur    │       │ key_type        │
-│ created_at      │       │ protocole       │       │ fingerprint     │
-│ last_login      │       │ adresse         │       │ created_at      │
-└────────┬────────┘       │ port            │       └─────────────────┘
-         │                │ chemin_distant  │
-         │                │ login (chiffré) │
-         │                │ mot_de_passe    │
-         │                │   (chiffré)     │
-         │                │ filtre_fichiers │
-         │                │ frequence_sync  │
-         │                │ retention_jours │
-         │                │ seuil_avert.    │
-         │                │ seuil_critique  │
-         │                │ actif           │
-         │                │ deleted_at      │
-         │                │ created_at      │
-         │                │ updated_at      │
-         │                └────────┬────────┘
-         │                         │
-         │         ┌───────────────┴───────────────┐
-         │         ▼                               ▼
-         │  ┌─────────────────┐           ┌─────────────────┐
-         │  │   documents     │           │    journaux     │
-         │  ├─────────────────┤           ├─────────────────┤
-         │  │ id (PK)         │           │ id (PK)         │
-         │  │ source_id (FK)  │           │ source_id (FK)  │
-         │  │ nom_fichier     │           │ user_id (FK) ◄──┼────┘
-         │  │ chemin_local    │           │ type_evenement  │
-         │  │ hash_sha256     │           │ message         │
-         │  │ taille_octets   │           │ details (JSON)  │
-         │  │ date_modif_src  │           │ created_at      │
-         │  │ date_collecte   │           └─────────────────┘
-         │  │ statut          │
-         │  │ created_at      │
-         │  │ updated_at      │
-         │  └─────────────────┘
+│ id (PK)         │◄──────│ role_id (FK)    │◄──────│ user_id (FK)    │
+│ nom             │       │ id (PK)         │       │ id (PK)         │
+│ permissions JSON│       │ username        │       │ token_hash      │
+│ description     │       │ password_hash   │       │ nom             │
+│ created_at      │       │ is_active       │       │ created_at      │
+└─────────────────┘       │ created_at      │       │ expires_at      │
+                          │ last_login      │       │ last_used_at    │
+                          └────────┬────────┘       │ is_active       │
+                                   │                └─────────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        ▼                          ▼                          ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│notification_conf│     │     sources     │     │  ssh_fingerprints│
+├─────────────────┤     ├─────────────────┤     ├─────────────────┤
+│ id (PK)         │     │ id (PK)         │◄────│ source_id (FK)  │
+│ user_id (FK)    │     │ nom             │     │ hostname        │
+│ email           │     │ protocole       │     │ fingerprint     │
+│ notif_erreurs   │     │ adresse         │     └─────────────────┘
+│ notif_critiques │     │ echecs_consec.  │
+│ actif           │     │ ...             │
+└─────────────────┘     └────────┬────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+             ┌─────────────────┐       ┌─────────────────┐
+             │   documents     │       │    journaux     │
+             ├─────────────────┤       ├─────────────────┤
+             │ id (PK)         │       │ id (PK)         │
+             │ source_id (FK)  │       │ source_id (FK)  │
+             │ nom_fichier     │       │ user_id (FK)    │
+             │ statut          │       │ type_evenement  │
+             │ ...             │       │ ...             │
+             └─────────────────┘       └─────────────────┘
 ```
+
+### Tables Phase 2
+
+| Table | Description |
+|-------|-------------|
+| **roles** | Rôles utilisateurs (`admin`, `operateur`, `lecteur`) avec permissions JSON |
+| **api_tokens** | Tokens d'authentification API |
+| **notification_configs** | Destinataires des alertes email |
+| **settings** | Paramètres globaux (clé/valeur) |
 
 ### Énumérations
 
@@ -148,6 +155,58 @@
 |---------|-------|-------------|
 | GET | `/journaux/` | Liste paginée avec filtres |
 | GET | `/journaux/exporter` | Export CSV |
+
+### Administration (`/admin`) — Phase 2
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/admin/utilisateurs` | Liste des utilisateurs |
+| GET/POST | `/admin/utilisateurs/nouveau` | Créer utilisateur |
+| GET/POST | `/admin/utilisateurs/<id>/modifier` | Modifier utilisateur |
+| POST | `/admin/utilisateurs/<id>/activer` | Activer utilisateur |
+| POST | `/admin/utilisateurs/<id>/desactiver` | Désactiver utilisateur |
+| GET | `/admin/roles` | Liste des rôles |
+| GET/POST | `/admin/roles/nouveau` | Créer rôle |
+| GET/POST | `/admin/roles/<id>/modifier` | Modifier rôle (permissions) |
+| POST | `/admin/roles/<id>/supprimer` | Supprimer rôle |
+| GET | `/admin/tokens` | Liste des tokens API |
+| GET/POST | `/admin/tokens/nouveau` | Créer token |
+| POST | `/admin/tokens/<id>/revoquer` | Révoquer token |
+| GET | `/admin/notifications` | Destinataires notifications |
+| GET/POST | `/admin/notifications/nouveau` | Ajouter destinataire |
+| POST | `/admin/notifications/test` | Envoyer email test |
+| GET | `/admin/parametres` | Paramètres globaux |
+| POST | `/admin/parametres/modifier` | Modifier paramètres |
+| GET | `/admin/ldap` | Configuration LDAP |
+| POST | `/admin/ldap/test` | Tester connexion LDAP |
+| POST | `/admin/ldap/sync-groupes` | Synchroniser groupes AD |
+
+### Rapports (`/`) — Phase 2
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/rapport.xlsx` | Export Excel conformité |
+| GET | `/rapport.pdf` | Export PDF conformité |
+
+### API REST (`/api/v1`) — Phase 2
+
+Authentification : Header `Authorization: Bearer <token>`
+
+**Documentation interactive** : `/api/v1/docs` (Swagger UI)
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/api/v1/health` | État de l'application (public) |
+| GET | `/api/v1/stats` | Statistiques globales |
+| GET | `/api/v1/sources` | Liste des sources |
+| GET | `/api/v1/sources/<id>` | Détail source |
+| POST | `/api/v1/sources/<id>/sync` | Déclencher sync |
+| GET | `/api/v1/sources/<id>/status` | État connexion |
+| GET | `/api/v1/documents` | Liste paginée (filtres: source_id, statut) |
+| GET | `/api/v1/documents/<id>` | Métadonnées document |
+| GET | `/api/v1/documents/<id>/download` | Télécharger fichier |
+| GET | `/api/v1/openapi.json` | Spécification OpenAPI 3.0 |
+| GET | `/api/v1/docs` | Interface Swagger UI |
 
 ---
 
@@ -214,6 +273,8 @@ docker compose down -v  # + supprimer volumes (PERTE DE DONNÉES)
 
 ## 5. Variables d'environnement
 
+### Variables principales
+
 | Variable | Requis | Description | Exemple |
 |----------|--------|-------------|---------|
 | `SECRET_KEY` | **Oui** | Clé secrète Flask (64 chars hex) | `python -c "import secrets; print(secrets.token_hex(32))"` |
@@ -222,6 +283,39 @@ docker compose down -v  # + supprimer volumes (PERTE DE DONNÉES)
 | `DATABASE_URL` | Non | URL SQLAlchemy | `sqlite:///instance/app.db` |
 | `STORAGE_DIR` | Non | Répertoire PDF | `/data/modes-degrades` |
 | `TZ` | Non | Fuseau horaire | `Europe/Paris` |
+
+### Variables SMTP (notifications) — Phase 2
+
+| Variable | Requis | Description | Exemple |
+|----------|--------|-------------|---------|
+| `SMTP_HOST` | Non | Serveur SMTP | `smtp.example.com` |
+| `SMTP_PORT` | Non | Port SMTP (défaut: 587) | `587` |
+| `SMTP_USER` | Non | Utilisateur SMTP | `notifications@example.com` |
+| `SMTP_PASSWORD` | Non | Mot de passe SMTP | |
+| `SMTP_FROM` | Non | Adresse expéditeur | `noreply@example.com` |
+| `SMTP_USE_TLS` | Non | Utiliser STARTTLS (défaut: true) | `true` |
+
+### Variables LDAP (authentification AD) — Phase 2
+
+| Variable | Requis | Description | Exemple |
+|----------|--------|-------------|---------|
+| `LDAP_ENABLED` | Non | Activer LDAP (défaut: false) | `true` |
+| `LDAP_HOST` | Non | Serveur LDAP/AD | `dc01.example.local` |
+| `LDAP_PORT` | Non | Port LDAP (défaut: 389) | `389` |
+| `LDAP_USE_SSL` | Non | LDAPS (défaut: false) | `false` |
+| `LDAP_BASE_DN` | Non | Base DN pour recherche | `DC=example,DC=local` |
+| `LDAP_BIND_DN` | Non | DN du compte de service | `CN=svc_app,OU=Services,DC=example,DC=local` |
+| `LDAP_BIND_PASSWORD` | Non | Mot de passe du compte de service | |
+| `LDAP_USER_FILTER` | Non | Filtre de recherche utilisateur | `(sAMAccountName={username})` |
+| `LDAP_DEFAULT_ROLE` | Non | Rôle par défaut (défaut: lecteur) | `lecteur` |
+| `LDAP_SYNC_GROUPS` | Non | Activer sync groupes (défaut: false) | `true` |
+| `LDAP_GROUP_MAPPING` | Non | Mapping groupes AD → rôles | `CN=Admins,DC=...:admin;CN=Users,DC=...:lecteur` |
+
+### Variables corbeille
+
+| Variable | Requis | Description | Exemple |
+|----------|--------|-------------|---------|
+| `CORBEILLE_RETENTION_JOURS` | Non | Jours avant suppression définitive (défaut: 30) | `30` |
 
 ### Génération des clés
 
@@ -286,24 +380,36 @@ app/
 ├── __init__.py          # Factory create_app()
 ├── extensions.py        # db, csrf, login_manager, limiter
 ├── utils/
-│   └── crypto.py        # Fonctions chiffrer/dechiffrer
+│   ├── crypto.py        # Fonctions chiffrer/dechiffrer
+│   └── decorators.py    # @require_role, @require_permission (Phase 2)
 ├── models/
 │   ├── source.py        # Sources de collecte
 │   ├── document.py      # Documents PDF
 │   ├── journal.py       # Événements d'audit
 │   ├── user.py          # Utilisateurs
+│   ├── role.py          # Rôles et permissions (Phase 2)
+│   ├── api_token.py     # Tokens API (Phase 2)
+│   ├── notification_config.py  # Config notifications (Phase 2)
+│   ├── setting.py       # Paramètres globaux (Phase 2)
 │   └── ssh_fingerprint.py
 ├── routes/
-│   ├── auth.py          # /auth/*
-│   ├── main.py          # / (dashboard)
+│   ├── auth.py          # /auth/* (+ LDAP Phase 2)
+│   ├── main.py          # / (dashboard, rapports)
 │   ├── sources.py       # /sources/*
 │   ├── documents.py     # /documents/*
-│   └── journaux.py      # /journaux/*
+│   ├── journaux.py      # /journaux/*
+│   ├── admin.py         # /admin/* (Phase 2)
+│   └── api.py           # /api/v1/* (Phase 2)
 ├── services/
 │   ├── sync_service.py  # Orchestration synchronisation
 │   ├── sftp_service.py  # Connecteur SFTP
 │   ├── smb_service.py   # Connecteur SMB
-│   └── purge_service.py # Purge automatique/manuelle
+│   ├── purge_service.py # Purge automatique/manuelle + corbeille
+│   ├── email_service.py # Envoi emails SMTP (Phase 2)
+│   ├── notification_service.py  # Alertes (Phase 2)
+│   ├── ldap_service.py  # Authentification LDAP + sync groupes (Phase 2)
+│   ├── export_service.py  # Rapports PDF/Excel (Phase 2)
+│   └── report_service.py  # Envoi automatique rapports (Phase 2)
 ├── scheduler/
 │   └── tasks.py         # Tâches APScheduler
 └── templates/           # Templates Jinja2

@@ -129,3 +129,158 @@ def _journaliser_purge(source, result: ResultatPurge) -> None:
     }
     db.session.add(entree)
     db.session.commit()
+
+
+def nettoyer_corbeille() -> int:
+    """
+    Supprime definitivement les fichiers en corbeille dont la periode de grace est depassee.
+
+    La periode de grace est configuree via le parametre 'corbeille_retention_jours'
+    ou la variable d'environnement CORBEILLE_RETENTION_JOURS (defaut: 30 jours).
+
+    Returns:
+        Nombre de fichiers supprimes
+    """
+    from app.models.setting import Setting
+
+    retention_jours = Setting.get("corbeille_retention_jours", None)
+    if retention_jours is None:
+        retention_jours = current_app.config.get("CORBEILLE_RETENTION_JOURS", 30)
+
+    storage_dir = current_app.config["STORAGE_DIR"]
+    corbeille_dir = os.path.join(storage_dir, _CORBEILLE)
+
+    if not os.path.exists(corbeille_dir):
+        return 0
+
+    seuil = datetime.now(timezone.utc) - timedelta(days=retention_jours)
+    nb_supprimes = 0
+
+    for source_dir in os.listdir(corbeille_dir):
+        source_path = os.path.join(corbeille_dir, source_dir)
+        if not os.path.isdir(source_path):
+            continue
+
+        for fichier in os.listdir(source_path):
+            chemin = os.path.join(source_path, fichier)
+            if not os.path.isfile(chemin):
+                continue
+
+            try:
+                mtime = datetime.fromtimestamp(os.path.getmtime(chemin), tz=timezone.utc)
+                if mtime < seuil:
+                    os.remove(chemin)
+                    nb_supprimes += 1
+                    logger.info("Corbeille : fichier supprime definitivement : %s", chemin)
+            except Exception as e:
+                logger.warning("Erreur suppression fichier corbeille %s : %s", chemin, e)
+
+        if os.path.isdir(source_path) and not os.listdir(source_path):
+            try:
+                os.rmdir(source_path)
+            except Exception:
+                pass
+
+    if nb_supprimes > 0:
+        entree = Journal(
+            type_evenement=TypeEvenement.PURGE,
+            message=f"Nettoyage corbeille : {nb_supprimes} fichier(s) supprime(s) definitivement"
+        )
+        db.session.add(entree)
+        db.session.commit()
+
+    return nb_supprimes
+
+
+def lister_corbeille() -> list:
+    """
+    Liste les fichiers actuellement en corbeille.
+
+    Returns:
+        Liste de dict avec source_id, nom_fichier, date_suppression, taille
+    """
+    storage_dir = current_app.config["STORAGE_DIR"]
+    corbeille_dir = os.path.join(storage_dir, _CORBEILLE)
+
+    if not os.path.exists(corbeille_dir):
+        return []
+
+    fichiers = []
+    for source_dir in os.listdir(corbeille_dir):
+        source_path = os.path.join(corbeille_dir, source_dir)
+        if not os.path.isdir(source_path):
+            continue
+
+        try:
+            source_id = int(source_dir)
+        except ValueError:
+            continue
+
+        for fichier in os.listdir(source_path):
+            chemin = os.path.join(source_path, fichier)
+            if not os.path.isfile(chemin):
+                continue
+
+            try:
+                stat = os.stat(chemin)
+                fichiers.append({
+                    "source_id": source_id,
+                    "nom_fichier": fichier,
+                    "date_suppression": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
+                    "taille": stat.st_size
+                })
+            except Exception:
+                pass
+
+    return sorted(fichiers, key=lambda f: f["date_suppression"], reverse=True)
+
+
+def restaurer_fichier_corbeille(source_id: int, nom_fichier: str) -> bool:
+    """
+    Restaure un fichier de la corbeille vers son emplacement d'origine.
+
+    Args:
+        source_id: ID de la source
+        nom_fichier: Nom du fichier a restaurer
+
+    Returns:
+        True si la restauration a reussi
+    """
+    storage_dir = current_app.config["STORAGE_DIR"]
+    corbeille_path = os.path.join(storage_dir, _CORBEILLE, str(source_id), nom_fichier)
+
+    if not os.path.exists(corbeille_path):
+        return False
+
+    from app.models.source import Source
+    source = Source.query.get(source_id)
+    if not source:
+        return False
+
+    from app.services.sync_service import _slugify
+    dossier_dest = os.path.join(storage_dir, _slugify(source.nom))
+    os.makedirs(dossier_dest, exist_ok=True)
+
+    base_nom = nom_fichier
+    if "_202" in nom_fichier and nom_fichier.endswith(".pdf"):
+        parts = nom_fichier.rsplit("_", 2)
+        if len(parts) >= 3:
+            base_nom = parts[0] + ".pdf"
+
+    chemin_dest = os.path.join(dossier_dest, base_nom)
+
+    try:
+        shutil.move(corbeille_path, chemin_dest)
+
+        doc = Document.query.filter_by(source_id=source_id, nom_fichier=base_nom).first()
+        if doc and doc.statut == StatutDocument.PURGE:
+            doc.statut = StatutDocument.CRITIQUE
+            doc.chemin_local = chemin_dest
+            db.session.commit()
+
+        logger.info("Fichier restaure : %s -> %s", corbeille_path, chemin_dest)
+        return True
+
+    except Exception as e:
+        logger.error("Erreur restauration %s : %s", corbeille_path, e)
+        return False

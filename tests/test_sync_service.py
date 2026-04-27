@@ -1,3 +1,4 @@
+
 """Tests unitaires du service de synchronisation (mock connecteurs, vrai DB)."""
 from __future__ import annotations
 

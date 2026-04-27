@@ -25,6 +25,30 @@ class Config:
     # Clé de chiffrement des identifiants sources (Fernet)
     ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "")
 
+    # Configuration SMTP pour les notifications
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = os.environ.get("SMTP_PORT", "587")
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_FROM = os.environ.get("SMTP_FROM", "noreply@example.com")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true")
+
+    # Configuration LDAP / Active Directory
+    LDAP_ENABLED = os.environ.get("LDAP_ENABLED", "false").lower() in ("true", "1", "yes")
+    LDAP_HOST = os.environ.get("LDAP_HOST", "")
+    LDAP_PORT = int(os.environ.get("LDAP_PORT", "389"))
+    LDAP_USE_SSL = os.environ.get("LDAP_USE_SSL", "false").lower() in ("true", "1", "yes")
+    LDAP_BASE_DN = os.environ.get("LDAP_BASE_DN", "")
+    LDAP_BIND_DN = os.environ.get("LDAP_BIND_DN", "")
+    LDAP_BIND_PASSWORD = os.environ.get("LDAP_BIND_PASSWORD", "")
+    LDAP_USER_FILTER = os.environ.get("LDAP_USER_FILTER", "(sAMAccountName={username})")
+    LDAP_DEFAULT_ROLE = os.environ.get("LDAP_DEFAULT_ROLE", "lecteur")
+    LDAP_GROUP_MAPPING = os.environ.get("LDAP_GROUP_MAPPING", "")
+    LDAP_SYNC_GROUPS = os.environ.get("LDAP_SYNC_GROUPS", "false").lower() in ("true", "1", "yes")
+
+    # Corbeille (période de grâce avant suppression définitive)
+    CORBEILLE_RETENTION_JOURS = int(os.environ.get("CORBEILLE_RETENTION_JOURS", "30"))
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

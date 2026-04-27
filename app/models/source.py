@@ -34,6 +34,7 @@ class Source(db.Model):
     seuil_critique_jours = db.Column(db.Integer, nullable=False, default=60)
     actif = db.Column(db.Boolean, nullable=False, default=True)
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    echecs_consecutifs = db.Column(db.Integer, nullable=False, default=0)
 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at = db.Column(

@@ -51,8 +51,10 @@ def create_app(config_name=None):
         )
 
     # Enregistrement des modèles pour que SQLAlchemy les connaisse
-    from app.models import source, document, journal, user, ssh_fingerprint  # noqa: F401
+    from app.models import source, document, journal, user, ssh_fingerprint, role, api_token, notification_config, setting  # noqa: F401
     from app.models.user import User
+    from app.models.role import Role, init_roles
+    from app.models.setting import init_settings
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -63,11 +65,15 @@ def create_app(config_name=None):
     from app.routes.sources import sources_bp
     from app.routes.documents import documents_bp
     from app.routes.journaux import journaux_bp
+    from app.routes.admin import admin_bp
+    from app.routes.api import api_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(sources_bp)
     app.register_blueprint(documents_bp)
     app.register_blueprint(journaux_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(api_bp)
 
     @app.template_filter("format_taille")
     def format_taille(taille):
@@ -83,7 +89,11 @@ def create_app(config_name=None):
     def init_db_command():
         """Crée toutes les tables de la base de données."""
         db.create_all()
+        init_roles()
+        init_settings()
         click.echo("Base de données initialisée.")
+        click.echo("Rôles par défaut créés (admin, operateur, lecteur).")
+        click.echo("Paramètres par défaut initialisés.")
 
     @app.cli.command("create-admin")
     @click.option("--username", prompt=True, help="Nom d'utilisateur admin")
@@ -99,11 +109,15 @@ def create_app(config_name=None):
         if User.query.filter_by(username=username).first():
             click.echo(f"Erreur : l'utilisateur '{username}' existe déjà.")
             return
-        admin = User(username=username)
+        admin_role = Role.query.filter_by(nom="admin").first()
+        if not admin_role:
+            init_roles()
+            admin_role = Role.query.filter_by(nom="admin").first()
+        admin = User(username=username, role=admin_role)
         admin.set_password(password)
         db.session.add(admin)
         db.session.commit()
-        click.echo(f"Administrateur '{username}' créé avec succès.")
+        click.echo(f"Administrateur '{username}' créé avec succès (rôle: admin).")
 
     if not app.config.get("TESTING"):
         from app.scheduler.tasks import demarrer_scheduler

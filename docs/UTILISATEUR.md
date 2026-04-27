@@ -8,6 +8,8 @@
 4. [Consulter les documents](#4-consulter-les-documents)
 5. [Télécharger des documents](#5-télécharger-des-documents)
 6. [Consulter les journaux](#6-consulter-les-journaux)
+7. [Exporter des rapports](#7-exporter-des-rapports)
+8. [Administration](#8-administration)
 
 ---
 
@@ -20,6 +22,8 @@
 3. Cliquez sur **Connexion**
 
 > **Note** : Un compte administrateur doit être créé par l'équipe technique avant la première utilisation.
+
+> **Authentification Active Directory** : Si l'intégration LDAP est configurée, vous pouvez utiliser vos identifiants Windows habituels. Un compte local sera créé automatiquement à la première connexion.
 
 ### Se déconnecter
 
@@ -178,6 +182,68 @@ Menu **Journaux** > historique complet des événements.
 
 ---
 
+## 7. Exporter des rapports
+
+### Rapport de conformité
+
+Le tableau de bord propose deux formats d'export :
+
+1. **Excel** : cliquez sur le bouton **Excel** dans la section "Rapports de conformité"
+   - Feuille récapitulative par source
+   - Une feuille détaillée par source avec tous les documents
+
+2. **PDF** : cliquez sur le bouton **PDF**
+   - Tableau récapitulatif
+   - Liste des documents avec statuts colorés
+
+Les rapports incluent tous les documents actifs avec leur statut (OK, Avertissement, Critique).
+
+---
+
+## 8. Administration
+
+> **Note** : Ces fonctionnalités sont réservées aux administrateurs.
+
+### Gérer les utilisateurs
+
+Menu **Administration** > **Utilisateurs**
+
+- **Créer un utilisateur** : cliquez sur "Nouvel utilisateur", renseignez nom, mot de passe et rôle
+- **Modifier** : cliquez sur l'icône crayon
+- **Activer/Désactiver** : un utilisateur désactivé ne peut plus se connecter
+
+### Rôles disponibles
+
+| Rôle | Permissions |
+|------|-------------|
+| **admin** | Toutes les permissions (gestion sources, utilisateurs, etc.) |
+| **lecteur** | Consultation documents, journaux (lecture seule) |
+
+### Gérer les tokens API
+
+Menu **Administration** > **Tokens API**
+
+Les tokens permettent d'accéder à l'API REST depuis des outils externes.
+
+1. Cliquez sur **Nouveau token**
+2. Choisissez un nom et un utilisateur associé
+3. Définissez une durée de validité (optionnel)
+4. **Copiez le token affiché** — il ne sera plus visible ensuite
+
+Pour révoquer un token, cliquez sur l'icône de révocation.
+
+### Configurer les notifications
+
+Menu **Administration** > **Notifications**
+
+Ajoutez des destinataires pour recevoir des alertes par email :
+- **Documents critiques** : alerte quand des documents dépassent le seuil critique
+- **Erreurs de connexion** : alerte après 3 échecs consécutifs sur une source
+
+Utilisez le bouton **Envoyer un email test** pour vérifier la configuration SMTP.
+
+---
+
 ## Questions fréquentes
 
 ### Je ne peux pas me connecter
@@ -206,6 +272,18 @@ Vérifiez la date de dernière modification et ajustez les seuils si nécessaire
 1. Menu **Sources** > **Sources archivées**
 2. Trouvez la source souhaitée
 3. Cliquez sur **Restaurer**
+
+### Comment utiliser l'API REST ?
+
+1. Demandez à un administrateur de créer un **token API** pour vous
+2. Utilisez le token dans vos requêtes avec le header `Authorization: Bearer <votre-token>`
+3. Exemple : `curl -H "Authorization: Bearer abc123..." http://serveur/api/v1/sources`
+
+### Je ne reçois pas les notifications par email
+
+- Vérifiez que la configuration SMTP est correcte (demandez à l'administrateur)
+- Vérifiez que votre adresse email est bien configurée dans Administration > Notifications
+- Utilisez le bouton "Envoyer un email test" pour diagnostiquer
 
 ---
 

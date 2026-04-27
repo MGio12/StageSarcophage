@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}LDAP — Administration{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h2><i class="bi bi-diagram-3"></i> Configuration LDAP / Active Directory</h2>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">Etat de la connexion</h5>
+      </div>
+      <div class="card-body">
+        {% if ldap_enabled %}
+          <p class="text-success"><i class="bi bi-check-circle"></i> LDAP active</p>
+
+          <form method="post" action="{{ url_for('admin.ldap_test') }}" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-primary">
+              <i class="bi bi-plug"></i> Tester la connexion
+            </button>
+          </form>
+
+        {% else %}
+          <div class="alert alert-warning mb-3">
+            <i class="bi bi-exclamation-triangle"></i>
+            LDAP desactive. Configurez les variables d'environnement :
+          </div>
+          <ul class="small text-muted">
+            <li>LDAP_ENABLED=true</li>
+            <li>LDAP_HOST</li>
+            <li>LDAP_BASE_DN</li>
+            <li>LDAP_BIND_DN</li>
+            <li>LDAP_BIND_PASSWORD</li>
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">Synchronisation des groupes</h5>
+      </div>
+      <div class="card-body">
+        {% if ldap_enabled and ldap_sync_groups %}
+          <p class="text-success"><i class="bi bi-check-circle"></i> Synchronisation des groupes active</p>
+
+          <p class="small text-muted">
+            La synchronisation mappe les groupes AD vers les roles applicatifs selon la configuration LDAP_GROUP_MAPPING.
+          </p>
+
+          <form method="post" action="{{ url_for('admin.ldap_sync_groupes') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-arrow-repeat"></i> Synchroniser maintenant
+            </button>
+          </form>
+
+        {% elif ldap_enabled %}
+          <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle"></i>
+            Synchronisation des groupes desactivee.
+          </div>
+          <p class="small text-muted">Pour activer :</p>
+          <ul class="small text-muted">
+            <li>LDAP_SYNC_GROUPS=true</li>
+            <li>LDAP_GROUP_MAPPING=CN=Admins,DC=...:admin;CN=Users,DC=...:lecteur</li>
+          </ul>
+
+        {% else %}
+          <p class="text-muted">Activez LDAP pour utiliser cette fonctionnalite.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h5 class="mb-0">Variables d'environnement LDAP</h5>
+  </div>
+  <div class="card-body">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Variable</th>
+          <th>Description</th>
+          <th>Exemple</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LDAP_ENABLED</code></td>
+          <td>Activer l'authentification LDAP</td>
+          <td><code>true</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_HOST</code></td>
+          <td>Adresse du serveur LDAP</td>
+          <td><code>ldap.example.com</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_PORT</code></td>
+          <td>Port (389 par defaut, 636 pour SSL)</td>
+          <td><code>389</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_USE_SSL</code></td>
+          <td>Utiliser SSL/TLS</td>
+          <td><code>false</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_BASE_DN</code></td>
+          <td>DN de base pour les recherches</td>
+          <td><code>DC=example,DC=com</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_BIND_DN</code></td>
+          <td>DN du compte de service</td>
+          <td><code>CN=service,OU=Service,DC=example,DC=com</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_BIND_PASSWORD</code></td>
+          <td>Mot de passe du compte de service</td>
+          <td><code>***</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_USER_FILTER</code></td>
+          <td>Filtre de recherche utilisateur</td>
+          <td><code>(sAMAccountName={username})</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_DEFAULT_ROLE</code></td>
+          <td>Role par defaut pour les nouveaux utilisateurs LDAP</td>
+          <td><code>lecteur</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_SYNC_GROUPS</code></td>
+          <td>Activer la synchronisation des groupes</td>
+          <td><code>true</code></td>
+        </tr>
+        <tr>
+          <td><code>LDAP_GROUP_MAPPING</code></td>
+          <td>Mapping groupes AD -> roles</td>
+          <td><code>CN=Admins,DC=...:admin;CN=Users,DC=...:lecteur</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

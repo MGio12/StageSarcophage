@@ -18,6 +18,7 @@ from flask import (
 from flask_login import current_user, login_required
 
 from app.extensions import db
+from app.utils.decorators import require_permission
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
 from app.models.source import Source
@@ -27,6 +28,7 @@ documents_bp = Blueprint("documents", __name__, url_prefix="/documents")
 
 @documents_bp.route("/")
 @login_required
+@require_permission("documents.view")
 def index():
     sources = Source.query.order_by(Source.nom).all()
 
@@ -91,6 +93,7 @@ def index():
 
 @documents_bp.route("/<int:doc_id>/voir")
 @login_required
+@require_permission("documents.view")
 def voir(doc_id):
     doc = db.get_or_404(Document, doc_id)
     _verifier_chemin(doc.chemin_local)
@@ -107,6 +110,7 @@ def voir(doc_id):
 
 @documents_bp.route("/<int:doc_id>/telecharger")
 @login_required
+@require_permission("documents.download")
 def telecharger(doc_id):
     doc = db.get_or_404(Document, doc_id)
     _verifier_chemin(doc.chemin_local)
@@ -128,6 +132,7 @@ def telecharger(doc_id):
 
 @documents_bp.route("/pdf/<int:doc_id>")
 @login_required
+@require_permission("documents.view")
 def pdf_inline(doc_id):
     """Sert le PDF en ligne pour l'affichage dans l'iframe du viewer."""
     doc = db.get_or_404(Document, doc_id)
@@ -145,6 +150,7 @@ MAX_ZIP_OCTETS = 500 * 1024 * 1024  # 500 Mo
 
 @documents_bp.route("/telecharger-zip", methods=["POST"])
 @login_required
+@require_permission("documents.download")
 def telecharger_zip():
     ids = request.form.getlist("doc_ids", type=int)
     if not ids:

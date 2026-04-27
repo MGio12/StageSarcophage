@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Parametres — Administration{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h2><i class="bi bi-gear"></i> Parametres globaux</h2>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.parametres_modifier') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <h5 class="mb-3">Affichage</h5>
+      <div class="mb-4">
+        <label for="fuseau_horaire" class="form-label">Fuseau horaire</label>
+        <select class="form-select" id="fuseau_horaire" name="fuseau_horaire">
+          {% set current_tz = settings | selectattr('cle', 'equalto', 'fuseau_horaire') | first %}
+          {% for tz in ['Europe/Paris', 'Europe/London', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'UTC'] %}
+          <option value="{{ tz }}" {% if current_tz and current_tz.valeur == tz %}selected{% endif %}>{{ tz }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <hr>
+
+      <h5 class="mb-3">Rapports automatiques</h5>
+      {% set rapport_active = settings | selectattr('cle', 'equalto', 'rapport_auto_active') | first %}
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="rapport_auto_active_check"
+               {% if rapport_active and rapport_active.valeur in ('true', '1') %}checked{% endif %}
+               onchange="document.getElementById('rapport_auto_active').value = this.checked ? 'true' : 'false'">
+        <input type="hidden" id="rapport_auto_active" name="rapport_auto_active"
+               value="{{ rapport_active.valeur if rapport_active else 'false' }}">
+        <label class="form-check-label" for="rapport_auto_active_check">
+          Activer l'envoi automatique des rapports de conformite
+        </label>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="rapport_auto_frequence" class="form-label">Frequence</label>
+          {% set freq = settings | selectattr('cle', 'equalto', 'rapport_auto_frequence') | first %}
+          <select class="form-select" id="rapport_auto_frequence" name="rapport_auto_frequence">
+            <option value="daily" {% if freq and freq.valeur == 'daily' %}selected{% endif %}>Quotidien</option>
+            <option value="weekly" {% if not freq or freq.valeur == 'weekly' %}selected{% endif %}>Hebdomadaire</option>
+            <option value="monthly" {% if freq and freq.valeur == 'monthly' %}selected{% endif %}>Mensuel</option>
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="rapport_auto_jour" class="form-label">Jour d'envoi</label>
+          {% set jour = settings | selectattr('cle', 'equalto', 'rapport_auto_jour') | first %}
+          <input type="number" class="form-control" id="rapport_auto_jour" name="rapport_auto_jour"
+                 value="{{ jour.valeur if jour else '1' }}" min="1" max="31">
+          <div class="form-text">1=lundi (hebdo) ou 1-28 (mensuel)</div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="rapport_auto_heure" class="form-label">Heure d'envoi</label>
+          {% set heure = settings | selectattr('cle', 'equalto', 'rapport_auto_heure') | first %}
+          <input type="number" class="form-control" id="rapport_auto_heure" name="rapport_auto_heure"
+                 value="{{ heure.valeur if heure else '8' }}" min="0" max="23">
+          <div class="form-text">Heure (0-23)</div>
+        </div>
+      </div>
+
+      <hr>
+
+      <h5 class="mb-3">Corbeille</h5>
+      <div class="mb-4">
+        <label for="corbeille_retention_jours" class="form-label">Retention en corbeille (jours)</label>
+        {% set retention = settings | selectattr('cle', 'equalto', 'corbeille_retention_jours') | first %}
+        <input type="number" class="form-control" id="corbeille_retention_jours" name="corbeille_retention_jours"
+               value="{{ retention.valeur if retention else '30' }}" min="1" max="365" style="max-width: 150px;">
+        <div class="form-text">Nombre de jours avant suppression definitive des fichiers en corbeille.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check"></i> Enregistrer les parametres
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Nouveau token API — Administration{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-key"></i> Nouveau token API</h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="mb-3">
+            <label for="nom" class="form-label">Nom du token *</label>
+            <input type="text" class="form-control" id="nom" name="nom"
+                   placeholder="Ex: Integration GLPI" required>
+            <div class="form-text">Un nom descriptif pour identifier ce token.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="user_id" class="form-label">Utilisateur associe *</label>
+            <select class="form-select" id="user_id" name="user_id" required>
+              <option value="">— Choisir un utilisateur —</option>
+              {% for user in users %}
+              <option value="{{ user.id }}">
+                {{ user.username }}{% if user.role %} ({{ user.role.nom }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Le token herite des permissions de cet utilisateur.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="duree_jours" class="form-label">Duree de validite (jours)</label>
+            <input type="number" class="form-control" id="duree_jours" name="duree_jours"
+                   min="1" max="365" placeholder="Laisser vide pour illimite">
+            <div class="form-text">Optionnel. Le token expirera apres ce nombre de jours.</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-plus-lg"></i> Generer le token
+            </button>
+            <a href="{{ url_for('admin.tokens') }}" class="btn btn-outline-secondary">
+              Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
