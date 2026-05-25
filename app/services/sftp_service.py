@@ -217,7 +217,7 @@ def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: s
     source_id = getattr(source, 'id', None)
 
     if source_id:
-        policy = StrictHostKeyPolicy(source_id, trust_new=True)
+        policy = StrictHostKeyPolicy(source_id, trust_new=False)
         client.set_missing_host_key_policy(policy)
     else:
         client.set_missing_host_key_policy(paramiko.WarningPolicy())

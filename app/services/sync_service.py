@@ -128,6 +128,7 @@ def synchroniser_source(source) -> ResultatSync:
         result.erreurs += 1
         result.messages_erreurs.append(msg)
         _journaliser_sync(source, result)
+        _enregistrer_resultat_sync(source, result)
         return result
 
     for f_distant in fichiers_distants:
@@ -144,6 +145,7 @@ def synchroniser_source(source) -> ResultatSync:
             result.messages_erreurs.append(msg)
 
     _journaliser_sync(source, result)
+    _enregistrer_resultat_sync(source, result)
     return result
 
 
@@ -214,3 +216,22 @@ def _journaliser_sync(source, result: ResultatSync) -> None:
     }
     db.session.add(entree)
     db.session.commit()
+
+
+def _enregistrer_resultat_sync(source, result: ResultatSync) -> None:
+    """Met à jour le compteur d'échecs consécutifs et déclenche les alertes."""
+    if not getattr(source, "id", None):
+        return
+
+    try:
+        from app.services.notification_service import (
+            enregistrer_echec_sync,
+            enregistrer_succes_sync,
+        )
+
+        if result.erreurs > 0:
+            enregistrer_echec_sync(source)
+        else:
+            enregistrer_succes_sync(source)
+    except Exception:
+        logger.exception("Erreur mise à jour compteur/notification source %d", source.id)

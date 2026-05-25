@@ -1,6 +1,7 @@
 import os
 import pytest
 from cryptography.fernet import Fernet
+from flask import g, has_app_context
 from app import create_app
 from app.extensions import db as _db
 
@@ -21,8 +22,12 @@ def app():
 @pytest.fixture(scope="function")
 def db(app):
     """Tables fraîches pour chaque test ; drop_all après garantit l'isolation."""
+    if has_app_context():
+        g.pop("_login_user", None)
     _db.create_all()
     yield _db
+    if has_app_context():
+        g.pop("_login_user", None)
     _db.session.remove()
     _db.drop_all()
 

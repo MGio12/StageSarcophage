@@ -71,6 +71,15 @@
                      {% if not source or source.actif %}checked{% endif %}>
               <label class="form-check-label" for="actif">Source active</label>
             </div>
+            {% if not source %}
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="sync_apres_creation"
+                     name="sync_apres_creation">
+              <label class="form-check-label" for="sync_apres_creation">
+                Synchroniser après création
+              </label>
+            </div>
+            {% endif %}
           </div>
         </div>
       </div>

@@ -45,6 +45,20 @@ def index():
     return render_template("sources/index.html", sources=sources, stats=stats)
 
 
+@sources_bp.route("/archivees")
+@login_required
+@require_permission("sources.view")
+def archivees():
+    sources = Source.query.filter(Source.deleted_at.isnot(None)).order_by(Source.nom).all()
+    stats = {}
+    for s in sources:
+        nb = Document.query.filter(
+            Document.source_id == s.id, Document.statut != StatutDocument.PURGE
+        ).count()
+        stats[s.id] = {"nb_docs": nb}
+    return render_template("sources/archivees.html", sources=sources, stats=stats)
+
+
 @sources_bp.route("/nouvelle", methods=["GET", "POST"])
 @login_required
 @require_permission("sources.edit")
@@ -58,6 +72,8 @@ def nouvelle():
         if not current_app.config.get("TESTING"):
             from app.scheduler.tasks import planifier_sync_source
             planifier_sync_source(source, current_app._get_current_object())
+        if source.actif and request.form.get("sync_apres_creation"):
+            _synchroniser_source_maintenant(source)
         flash(f"Source « {source.nom} » créée avec succès.", "success")
         return redirect(url_for("sources.detail", source_id=source.id))
     return render_template("sources/form.html", source=None, titre="Nouvelle source")
@@ -142,12 +158,39 @@ def restaurer(source_id):
     return redirect(url_for("sources.detail", source_id=source_id))
 
 
+@sources_bp.route("/<int:source_id>/tester", methods=["POST"])
+@login_required
+@require_permission("sources.view")
+@limiter.limit("5 per minute")
+def tester(source_id):
+    source = db.get_or_404(Source, source_id)
+    try:
+        resultat = _tester_connexion_source(source)
+    except Exception as exc:
+        logger.exception("Erreur test source %s", source.nom)
+        resultat = {"succes": False, "message": str(exc)}
+
+    if request.accept_mimetypes.best == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify(resultat)
+
+    if resultat["succes"]:
+        flash(resultat["message"], "success")
+    else:
+        flash(resultat["message"], "danger")
+    return redirect(url_for("sources.detail", source_id=source_id))
+
+
 @sources_bp.route("/<int:source_id>/synchroniser", methods=["POST"])
 @login_required
 @require_permission("sources.sync")
 @limiter.limit("10 per minute")
 def synchroniser(source_id):
     source = db.get_or_404(Source, source_id)
+    _synchroniser_source_maintenant(source)
+    return redirect(request.referrer or url_for("sources.detail", source_id=source_id))
+
+
+def _synchroniser_source_maintenant(source: Source) -> None:
     try:
         from app.services.sync_service import synchroniser_source
         from app.services.purge_service import mettre_a_jour_statuts
@@ -160,7 +203,6 @@ def synchroniser(source_id):
         )
     except Exception as exc:
         flash(f"Erreur lors de la synchronisation : {exc}", "danger")
-    return redirect(request.referrer or url_for("sources.detail", source_id=source_id))
 
 
 @sources_bp.route("/<int:source_id>/purger", methods=["POST"])
@@ -282,6 +324,42 @@ def _parse_int_borne(valeur: str | None, defaut: int, mini: int, maxi: int) -> i
     except (ValueError, TypeError):
         return defaut
     return max(mini, min(maxi, n))
+
+
+def _tester_connexion_source(source: Source) -> dict:
+    if source.protocole == "sftp":
+        from app.services.sftp_service import tester_connexion
+    elif source.protocole == "smb":
+        from app.services.smb_service import tester_connexion
+    elif source.protocole == "local":
+        from app.services.sync_service import _lister_local
+
+        fichiers = _lister_local(source)
+        return {
+            "succes": True,
+            "message": f"Connexion locale réussie — {len(fichiers)} fichier(s) trouvé(s)",
+            "nb_fichiers": len(fichiers),
+        }
+    else:
+        return {
+            "succes": False,
+            "message": f"Test non disponible pour le protocole « {source.protocole} »",
+        }
+
+    resultat = tester_connexion(source)
+    response = {
+        "succes": resultat.succes,
+        "message": resultat.message,
+        "nb_fichiers": resultat.nb_fichiers,
+    }
+    if getattr(resultat, "fingerprint_nouveau", None):
+        response["fingerprint_nouveau"] = resultat.fingerprint_nouveau
+        response["fingerprint_key_type"] = resultat.fingerprint_key_type
+        response["message"] = (
+            f"{resultat.message} Fingerprint {resultat.fingerprint_key_type}: "
+            f"{resultat.fingerprint_nouveau}"
+        )
+    return response
 
 
 def _source_depuis_formulaire(source: Source | None) -> Source | None:

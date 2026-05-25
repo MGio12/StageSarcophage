@@ -7,7 +7,6 @@ from flask import (
     Blueprint,
     abort,
     after_this_request,
-    current_app,
     redirect,
     render_template,
     request,
@@ -22,6 +21,7 @@ from app.utils.decorators import require_permission
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
 from app.models.source import Source
+from app.utils.files import chemin_dans_storage, nom_archive_zip
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/documents")
 
@@ -66,11 +66,37 @@ def index():
         except ValueError:
             pass
 
-    docs = query.order_by(Document.nom_fichier).all()
+    sort = request.args.get("sort", "nom").strip()
+    direction = request.args.get("direction", "asc").strip().lower()
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = request.args.get("per_page", 50, type=int)
+    per_page = max(10, min(per_page, 100))
+
+    colonnes_tri = {
+        "nom": Document.nom_fichier,
+        "source": Source.nom,
+        "modification": Document.date_modification_source,
+        "age": Document.date_modification_source,
+        "taille": Document.taille_octets,
+        "statut": Document.statut,
+    }
+    if sort not in colonnes_tri:
+        sort = "nom"
+    if direction not in {"asc", "desc"}:
+        direction = "asc"
+
+    if sort == "source":
+        query = query.outerjoin(Source)
+
+    colonne_tri = colonnes_tri[sort]
+    ordre = colonne_tri.desc() if direction == "desc" else colonne_tri.asc()
+    pagination = query.order_by(ordre, Document.nom_fichier.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     maintenant = datetime.now(timezone.utc)
     docs_avec_age = []
-    for doc in docs:
+    for doc in pagination.items:
         age_jours = None
         if doc.date_modification_source:
             mtime = doc.date_modification_source
@@ -88,6 +114,10 @@ def index():
         q_filtre=q,
         depuis_filtre=depuis,
         jusqua_filtre=jusqua,
+        pagination=pagination,
+        sort=sort,
+        direction=direction,
+        per_page=per_page,
     )
 
 
@@ -113,7 +143,7 @@ def voir(doc_id):
 @require_permission("documents.download")
 def telecharger(doc_id):
     doc = db.get_or_404(Document, doc_id)
-    _verifier_chemin(doc.chemin_local)
+    chemin = _verifier_chemin(doc.chemin_local)
     entree = Journal(
         source_id=doc.source_id,
         user_id=current_user.id,
@@ -123,7 +153,7 @@ def telecharger(doc_id):
     db.session.add(entree)
     db.session.commit()
     return send_file(
-        doc.chemin_local,
+        chemin,
         as_attachment=True,
         download_name=doc.nom_fichier,
         mimetype="application/pdf",
@@ -136,9 +166,9 @@ def telecharger(doc_id):
 def pdf_inline(doc_id):
     """Sert le PDF en ligne pour l'affichage dans l'iframe du viewer."""
     doc = db.get_or_404(Document, doc_id)
-    _verifier_chemin(doc.chemin_local)
+    chemin = _verifier_chemin(doc.chemin_local)
     return send_file(
-        doc.chemin_local,
+        chemin,
         mimetype="application/pdf",
         as_attachment=False,
     )
@@ -161,14 +191,24 @@ def telecharger_zip():
         flash(f"Maximum {MAX_ZIP_DOCS} documents par téléchargement.", "warning")
         return redirect(url_for("documents.index"))
 
-    docs = Document.query.filter(Document.id.in_(ids)).all()
-    docs_valides = [d for d in docs if os.path.exists(d.chemin_local)]
+    docs = Document.query.filter(
+        Document.id.in_(ids),
+        Document.statut != StatutDocument.PURGE,
+    ).all()
+    docs_valides = []
+    for doc in docs:
+        try:
+            chemin = chemin_dans_storage(doc.chemin_local)
+        except ValueError:
+            abort(403)
+        if os.path.isfile(chemin):
+            docs_valides.append((doc, chemin))
 
     if not docs_valides:
         flash("Aucun fichier disponible pour le téléchargement.", "warning")
         return redirect(url_for("documents.index"))
 
-    taille_totale = sum(d.taille_octets or 0 for d in docs_valides)
+    taille_totale = sum(d.taille_octets or 0 for d, _chemin in docs_valides)
     if taille_totale > MAX_ZIP_OCTETS:
         flash(f"Taille totale trop importante (max 500 Mo).", "warning")
         return redirect(url_for("documents.index"))
@@ -176,13 +216,13 @@ def telecharger_zip():
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
         noms_vus: dict[str, int] = {}
-        for doc in docs_valides:
-            nom = doc.nom_fichier
+        for doc, chemin in docs_valides:
+            nom = nom_archive_zip(doc.nom_fichier)
             if nom in noms_vus:
                 base, ext = os.path.splitext(nom)
                 nom = f"{base}_{doc.source_id}{ext}"
             noms_vus[nom] = 1
-            zf.write(doc.chemin_local, nom)
+            zf.write(chemin, nom)
     tmp.close()
 
     @after_this_request
@@ -199,11 +239,12 @@ def telecharger_zip():
     )
 
 
-def _verifier_chemin(chemin_local: str) -> None:
+def _verifier_chemin(chemin_local: str) -> str:
     """Vérifie que le fichier est bien dans STORAGE_DIR (anti path-traversal)."""
-    storage = os.path.realpath(current_app.config["STORAGE_DIR"])
-    cible = os.path.realpath(chemin_local)
-    if not cible.startswith(storage):
+    try:
+        cible = chemin_dans_storage(chemin_local)
+    except ValueError:
         abort(403)
-    if not os.path.exists(cible):
+    if not os.path.isfile(cible):
         abort(404)
+    return cible

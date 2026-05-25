@@ -34,6 +34,7 @@ class ResultatPurge:
 def mettre_a_jour_statuts(source) -> None:
     """Met à jour les statuts ok/avertissement/critique selon l'âge des documents."""
     maintenant = datetime.now(timezone.utc)
+    documents_devenus_critiques = []
     docs = Document.query.filter(
         Document.source_id == source.id,
         Document.statut != StatutDocument.PURGE,
@@ -54,9 +55,18 @@ def mettre_a_jour_statuts(source) -> None:
             nouveau = StatutDocument.OK
 
         if doc.statut != nouveau:
+            if nouveau == StatutDocument.CRITIQUE:
+                documents_devenus_critiques.append(doc)
             doc.statut = nouveau
 
     db.session.commit()
+
+    if documents_devenus_critiques:
+        try:
+            from app.services.notification_service import notifier_documents_critiques
+            notifier_documents_critiques(source, documents_devenus_critiques)
+        except Exception:
+            logger.exception("Erreur notification documents critiques source %d", source.id)
 
 
 def purger_source(source) -> ResultatPurge:
@@ -253,12 +263,12 @@ def restaurer_fichier_corbeille(source_id: int, nom_fichier: str) -> bool:
         return False
 
     from app.models.source import Source
-    source = Source.query.get(source_id)
+    source = db.session.get(Source, source_id)
     if not source:
         return False
 
     from app.services.sync_service import _slugify
-    dossier_dest = os.path.join(storage_dir, _slugify(source.nom))
+    dossier_dest = os.path.join(storage_dir, f"{source.id}_{_slugify(source.nom)}")
     os.makedirs(dossier_dest, exist_ok=True)
 
     base_nom = nom_fichier

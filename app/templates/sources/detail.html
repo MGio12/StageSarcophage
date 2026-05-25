@@ -10,10 +10,36 @@
     {% endif %}
   </h1>
   <div class="d-flex gap-2">
+    {% if source.deleted_at %}
+    <form method="post"
+          action="{{ url_for('sources.restaurer', source_id=source.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-success btn-sm">
+        <i class="bi bi-arrow-counterclockwise"></i> Restaurer
+      </button>
+    </form>
+    {% endif %}
     <a href="{{ url_for('sources.modifier', source_id=source.id) }}"
        class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-pencil"></i> Modifier
     </a>
+    <form method="post"
+          action="{{ url_for('sources.tester', source_id=source.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-info btn-sm">
+        <i class="bi bi-plug"></i> Tester
+      </button>
+    </form>
+    {% if source.protocole == 'sftp' %}
+    <form method="post"
+          action="{{ url_for('sources.accepter_fingerprint', source_id=source.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-fingerprint"></i> Accepter fingerprint
+      </button>
+    </form>
+    {% endif %}
+    {% if not source.deleted_at %}
     <form method="post"
           action="{{ url_for('sources.synchroniser', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -21,14 +47,17 @@
         <i class="bi bi-arrow-repeat"></i> Synchroniser
       </button>
     </form>
-    <form method="post"
-          action="{{ url_for('sources.purger', source_id=source.id) }}"
-          onsubmit="return confirm('Purger les fichiers expirés de cette source ?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-outline-warning btn-sm">
-        <i class="bi bi-trash"></i> Purger
-      </button>
-    </form>
+    {% endif %}
+    {% if not source.deleted_at %}
+      <form method="post"
+            action="{{ url_for('sources.purger', source_id=source.id) }}"
+            onsubmit="return confirm('Purger les fichiers expirés de cette source ?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-warning btn-sm">
+          <i class="bi bi-trash"></i> Purger
+        </button>
+      </form>
+    {% endif %}
     <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left"></i> Retour
     </a>

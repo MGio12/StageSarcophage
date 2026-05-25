@@ -38,6 +38,7 @@ PERMISSIONS_DISPONIBLES = {
     "sources.edit": "Creer et modifier les sources",
     "sources.delete": "Supprimer les sources",
     "sources.sync": "Declencher la synchronisation",
+    "sources.purge": "Declencher la purge",
     "documents.view": "Voir les documents",
     "documents.download": "Telecharger les documents",
     "journal.view": "Voir les journaux",
@@ -61,6 +62,7 @@ ROLES_INITIAUX = {
             "sources.view": True,
             "sources.edit": True,
             "sources.sync": True,
+            "sources.purge": True,
             "documents.view": True,
             "documents.download": True,
             "journal.view": True,
@@ -80,13 +82,23 @@ ROLES_INITIAUX = {
 
 
 def init_roles():
-    """Crée les rôles initiaux s'ils n'existent pas."""
+    """Crée les rôles initiaux et complète leurs permissions système."""
     for nom, config in ROLES_INITIAUX.items():
-        if not Role.query.filter_by(nom=nom).first():
+        role = Role.query.filter_by(nom=nom).first()
+        if not role:
             role = Role(
                 nom=nom,
                 description=config["description"],
                 permissions=config["permissions"]
             )
             db.session.add(role)
+        else:
+            permissions = dict(role.permissions or {})
+            modifie = False
+            for permission, active in config["permissions"].items():
+                if permission not in permissions:
+                    permissions[permission] = active
+                    modifie = True
+            if modifie:
+                role.permissions = permissions
     db.session.commit()

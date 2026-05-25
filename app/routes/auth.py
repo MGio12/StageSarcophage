@@ -33,14 +33,21 @@ def _authentifier_utilisateur(username: str, password: str):
             if not user:
                 config = get_ldap_config()
                 default_role = Role.query.filter_by(nom=config.default_role).first()
-                user = User(username=username, role=default_role)
-                user.set_password(password)
+                user = User(username=username, role=default_role, auth_provider="ldap")
+                user.set_unusable_password()
                 db.session.add(user)
                 db.session.commit()
                 logger.info("Utilisateur LDAP cree localement : %s", username)
+            elif user.auth_provider != "ldap":
+                user.auth_provider = "ldap"
+                db.session.commit()
             return user
 
     user = User.query.filter_by(username=username).first()
+    if user and user.auth_provider == "ldap":
+        logger.warning("Fallback local refuse pour le compte LDAP : %s", username)
+        return None
+
     if user and user.is_active and user.check_password(password):
         return user
 

@@ -82,7 +82,7 @@ def notifier_erreur_connexion(source: Source) -> int:
     Returns:
         Nombre d'emails envoyés
     """
-    if source.echecs_consecutifs < SEUIL_ECHECS_NOTIFICATION:
+    if (source.echecs_consecutifs or 0) < SEUIL_ECHECS_NOTIFICATION:
         return 0
 
     destinataires = NotificationConfig.query.filter_by(
@@ -124,14 +124,14 @@ def notifier_erreur_connexion(source: Source) -> int:
 
 def enregistrer_succes_sync(source: Source) -> None:
     """Réinitialise le compteur d'échecs après une synchronisation réussie."""
-    if source.echecs_consecutifs > 0:
+    if (source.echecs_consecutifs or 0) > 0:
         source.echecs_consecutifs = 0
         db.session.commit()
 
 
 def enregistrer_echec_sync(source: Source) -> None:
     """Incrémente le compteur d'échecs et envoie une notification si seuil atteint."""
-    source.echecs_consecutifs += 1
+    source.echecs_consecutifs = (source.echecs_consecutifs or 0) + 1
     db.session.commit()
     if source.echecs_consecutifs == SEUIL_ECHECS_NOTIFICATION:
         notifier_erreur_connexion(source)

@@ -28,6 +28,10 @@ def create_app(config_name=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
 
+    if app.config.get("TRUST_PROXY"):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     os.makedirs(app.instance_path, exist_ok=True)
     os.makedirs(app.config["STORAGE_DIR"], exist_ok=True)
 
@@ -40,12 +44,14 @@ def create_app(config_name=None):
         from flask_talisman import Talisman
         Talisman(
             app,
-            force_https=config_name == "production",
+            force_https=app.config.get("FORCE_HTTPS", False),
+            session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", False),
             content_security_policy={
                 "default-src": "'self'",
-                "script-src": "'self' 'unsafe-inline'",
-                "style-src": "'self' 'unsafe-inline'",
+                "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+                "style-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
                 "img-src": "'self' data:",
+                "font-src": "'self' data: https://cdn.jsdelivr.net",
                 "frame-src": "'self'",
             },
         )
@@ -58,7 +64,7 @@ def create_app(config_name=None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     from app.routes.auth import auth_bp
     from app.routes.main import main_bp
@@ -67,6 +73,7 @@ def create_app(config_name=None):
     from app.routes.journaux import journaux_bp
     from app.routes.admin import admin_bp
     from app.routes.api import api_bp
+    csrf.exempt(api_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(sources_bp)
@@ -87,13 +94,30 @@ def create_app(config_name=None):
 
     @app.cli.command("init-db")
     def init_db_command():
-        """Crée toutes les tables de la base de données."""
-        db.create_all()
+        """Crée ou met à jour le schéma de la base de données."""
+        from app.services.migration_service import run_schema_migrations
+
+        operations = run_schema_migrations()
         init_roles()
         init_settings()
-        click.echo("Base de données initialisée.")
+        click.echo("Base de données initialisée/mise à jour.")
+        if operations:
+            click.echo("Colonnes ajoutées : " + ", ".join(operations))
         click.echo("Rôles par défaut créés (admin, operateur, lecteur).")
         click.echo("Paramètres par défaut initialisés.")
+
+    @app.cli.command("upgrade-db")
+    def upgrade_db_command():
+        """Applique les migrations idempotentes sur une base existante."""
+        from app.services.migration_service import run_schema_migrations
+
+        operations = run_schema_migrations()
+        init_roles()
+        init_settings()
+        if operations:
+            click.echo("Colonnes ajoutées : " + ", ".join(operations))
+        else:
+            click.echo("Base de données déjà à jour.")
 
     @app.cli.command("create-admin")
     @click.option("--username", prompt=True, help="Nom d'utilisateur admin")

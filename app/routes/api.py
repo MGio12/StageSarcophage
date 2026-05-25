@@ -9,13 +9,14 @@ Documentation : /api/docs
 from functools import wraps
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request, abort, current_app, send_file, render_template_string
+from flask import Blueprint, jsonify, request, abort, send_file, render_template_string
 
 from app.extensions import db
 from app.models.api_token import APIToken
 from app.models.source import Source
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
+from app.utils.files import chemin_dans_storage
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -38,6 +39,24 @@ def require_api_token(f):
     return decorated
 
 
+def require_api_permissions(*permissions):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            user = getattr(request, "api_user", None)
+            if not user:
+                return jsonify({"error": "Authorization required"}), 401
+            missing = [perm for perm in permissions if not user.has_permission(perm)]
+            if missing:
+                return jsonify({
+                    "error": "Permission denied",
+                    "missing_permissions": missing,
+                }), 403
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+
 @api_bp.route("/health")
 def health():
     return jsonify({
@@ -48,6 +67,7 @@ def health():
 
 @api_bp.route("/stats")
 @require_api_token
+@require_api_permissions("sources.view", "documents.view")
 def stats():
     total_sources = Source.query.filter(Source.deleted_at.is_(None)).count()
     sources_actives = Source.query.filter(
@@ -77,6 +97,7 @@ def stats():
 
 @api_bp.route("/sources")
 @require_api_token
+@require_api_permissions("sources.view")
 def sources_list():
     sources = Source.query.filter(Source.deleted_at.is_(None)).order_by(Source.nom).all()
     return jsonify({
@@ -86,6 +107,7 @@ def sources_list():
 
 @api_bp.route("/sources/<int:source_id>")
 @require_api_token
+@require_api_permissions("sources.view")
 def source_detail(source_id):
     source = Source.query.filter_by(id=source_id).first()
     if not source or source.deleted_at:
@@ -95,6 +117,7 @@ def source_detail(source_id):
 
 @api_bp.route("/sources/<int:source_id>/sync", methods=["POST"])
 @require_api_token
+@require_api_permissions("sources.sync")
 def source_sync(source_id):
     source = Source.query.filter_by(id=source_id).first()
     if not source or source.deleted_at:
@@ -118,6 +141,7 @@ def source_sync(source_id):
 
 @api_bp.route("/sources/<int:source_id>/status")
 @require_api_token
+@require_api_permissions("sources.view")
 def source_status(source_id):
     source = Source.query.filter_by(id=source_id).first()
     if not source or source.deleted_at:
@@ -141,9 +165,12 @@ def source_status(source_id):
 
 @api_bp.route("/documents")
 @require_api_token
+@require_api_permissions("documents.view")
 def documents_list():
     page = request.args.get("page", 1, type=int)
-    per_page = min(request.args.get("per_page", 50, type=int), 100)
+    page = max(page, 1)
+    per_page = request.args.get("per_page", 50, type=int)
+    per_page = max(1, min(per_page, 100))
     source_id = request.args.get("source_id", type=int)
     statut = request.args.get("statut", "").strip()
 
@@ -170,8 +197,9 @@ def documents_list():
 
 @api_bp.route("/documents/<int:doc_id>")
 @require_api_token
+@require_api_permissions("documents.view")
 def document_detail(doc_id):
-    doc = Document.query.get(doc_id)
+    doc = db.session.get(Document, doc_id)
     if not doc or doc.statut == StatutDocument.PURGE:
         return jsonify({"error": "Document not found"}), 404
     return jsonify(_document_to_dict(doc, detail=True))
@@ -179,16 +207,17 @@ def document_detail(doc_id):
 
 @api_bp.route("/documents/<int:doc_id>/download")
 @require_api_token
+@require_api_permissions("documents.download")
 def document_download(doc_id):
     import os
-    doc = Document.query.get(doc_id)
+    doc = db.session.get(Document, doc_id)
     if not doc or doc.statut == StatutDocument.PURGE:
         return jsonify({"error": "Document not found"}), 404
-    storage = os.path.realpath(current_app.config["STORAGE_DIR"])
-    chemin = os.path.realpath(doc.chemin_local)
-    if not chemin.startswith(storage):
+    try:
+        chemin = chemin_dans_storage(doc.chemin_local)
+    except ValueError:
         abort(403)
-    if not os.path.exists(chemin):
+    if not os.path.isfile(chemin):
         return jsonify({"error": "File not found on disk"}), 404
     entree = Journal(
         source_id=doc.source_id,

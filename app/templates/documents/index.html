@@ -4,11 +4,32 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0"><i class="bi bi-file-earmark-pdf"></i> Documents</h1>
-  <span class="text-muted small">{{ docs_avec_age|length }} document(s)</span>
+  <span class="text-muted small">{{ pagination.total }} document(s)</span>
 </div>
+
+{% macro sort_link(label, key) -%}
+  {% set prochaine_direction = 'desc' if sort == key and direction == 'asc' else 'asc' %}
+  <a class="text-decoration-none text-dark" href="{{ url_for('documents.index',
+      source_id=source_id_filtre,
+      statut=statut_filtre,
+      q=q_filtre,
+      depuis=depuis_filtre,
+      jusqua=jusqua_filtre,
+      per_page=per_page,
+      sort=key,
+      direction=prochaine_direction) }}">
+    {{ label }}
+    {% if sort == key %}
+      <i class="bi bi-caret-{{ 'up' if direction == 'asc' else 'down' }}-fill"></i>
+    {% endif %}
+  </a>
+{%- endmacro %}
 
 <!-- Barre de filtres -->
 <form method="get" class="card shadow-sm mb-4">
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="direction" value="{{ direction }}">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
   <div class="card-body py-2">
     <div class="row g-2 align-items-end">
       <div class="col-sm-4 col-lg-3">
@@ -79,12 +100,12 @@
         <thead class="table-light">
           <tr>
             <th style="width:2rem"></th>
-            <th>Nom du fichier</th>
-            <th>Source</th>
-            <th>Modifié le</th>
-            <th>Âge</th>
-            <th>Taille</th>
-            <th class="text-center">Statut</th>
+            <th>{{ sort_link('Nom du fichier', 'nom') }}</th>
+            <th>{{ sort_link('Source', 'source') }}</th>
+            <th>{{ sort_link('Modifié le', 'modification') }}</th>
+            <th>{{ sort_link('Âge', 'age') }}</th>
+            <th>{{ sort_link('Taille', 'taille') }}</th>
+            <th class="text-center">{{ sort_link('Statut', 'statut') }}</th>
             <th></th>
           </tr>
         </thead>
@@ -142,6 +163,60 @@
       </table>
     </div>
   </div>
+
+  {% if pagination.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="small text-muted">
+      Page {{ pagination.page }} / {{ pagination.pages }}
+    </div>
+    <nav aria-label="Pagination documents">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('documents.index',
+              source_id=source_id_filtre,
+              statut=statut_filtre,
+              q=q_filtre,
+              depuis=depuis_filtre,
+              jusqua=jusqua_filtre,
+              per_page=per_page,
+              sort=sort,
+              direction=direction,
+              page=pagination.prev_num if pagination.has_prev else pagination.page) }}">Précédent</a>
+        </li>
+        {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+          {% if p %}
+          <li class="page-item {% if p == pagination.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('documents.index',
+                source_id=source_id_filtre,
+                statut=statut_filtre,
+                q=q_filtre,
+                depuis=depuis_filtre,
+                jusqua=jusqua_filtre,
+                per_page=per_page,
+                sort=sort,
+                direction=direction,
+                page=p) }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('documents.index',
+              source_id=source_id_filtre,
+              statut=statut_filtre,
+              q=q_filtre,
+              depuis=depuis_filtre,
+              jusqua=jusqua_filtre,
+              per_page=per_page,
+              sort=sort,
+              direction=direction,
+              page=pagination.next_num if pagination.has_next else pagination.page) }}">Suivant</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
 </form>
 
 {% else %}
