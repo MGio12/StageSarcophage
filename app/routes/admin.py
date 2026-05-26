@@ -1,7 +1,7 @@
 """
 Routes d'administration.
 
-Phase 2 — CDC §8.2 : gestion des rôles et API REST.
+Phase 2 - CDC §8.2 : gestion des rôles et API REST.
 """
 from datetime import datetime, timedelta, timezone
 

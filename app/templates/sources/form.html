@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ titre }} — Modes Dégradés{% endblock %}
+{% block title %}{{ titre }} - Modes Dégradés{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -225,16 +225,26 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
+function setIconText(element, iconClass, text, options = {}) {
+  const icon = document.createElement(options.spinner ? 'span' : 'i');
+  icon.className = iconClass;
+  icon.setAttribute('aria-hidden', 'true');
+  if (options.spinner) {
+    icon.setAttribute('role', 'status');
+  }
+  element.replaceChildren(icon, document.createTextNode(' ' + text));
+}
+
 document.getElementById('btnTest').addEventListener('click', function () {
   const btn = this;
   const result = document.getElementById('test-result');
   const form = document.getElementById('sourceForm');
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Test…';
+  setIconText(btn, 'spinner-border spinner-border-sm', 'Test...', {spinner: true});
   result.className = 'small';
-  result.textContent = '';
+  result.replaceChildren();
 
   const data = new FormData(form);
   // Retire les champs inutiles pour le test
@@ -254,19 +264,19 @@ document.getElementById('btnTest').addEventListener('click', function () {
   .then(json => {
     if (json.succes) {
       result.className = 'small text-success';
-      result.innerHTML = '<i class="bi bi-check-circle"></i> ' + json.message;
+      setIconText(result, 'bi bi-check-circle', String(json.message || ''));
     } else {
       result.className = 'small text-danger';
-      result.innerHTML = '<i class="bi bi-x-circle"></i> ' + json.message;
+      setIconText(result, 'bi bi-x-circle', String(json.message || ''));
     }
   })
-  .catch(err => {
+  .catch(() => {
     result.className = 'small text-danger';
-    result.textContent = 'Erreur réseau : ' + err;
+    result.textContent = 'Erreur réseau.';
   })
   .finally(() => {
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-plug"></i> Tester la connexion';
+    setIconText(btn, 'bi bi-plug', 'Tester la connexion');
   });
 });
 </script>

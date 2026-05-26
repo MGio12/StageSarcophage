@@ -1,7 +1,7 @@
 """
 Modele pour les parametres globaux de l'application.
 
-Phase 2 — F1 : Page parametres globaux.
+Phase 2 - F1 : Page parametres globaux.
 """
 from datetime import datetime, timezone
 

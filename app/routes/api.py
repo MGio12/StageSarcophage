@@ -1,15 +1,16 @@
 """
 API REST pour intégration avec d'autres outils internes.
 
-Phase 2 — CDC §8.2 : API REST.
+Phase 2 - CDC §8.2 : API REST.
 Préfixe : /api/v1
 Authentification : Bearer token (header Authorization)
 Documentation : /api/docs
 """
 from functools import wraps
 from datetime import datetime, timezone
+import logging
 
-from flask import Blueprint, jsonify, request, abort, send_file, render_template_string
+from flask import Blueprint, jsonify, request, abort, send_file, render_template
 
 from app.extensions import db
 from app.models.api_token import APIToken
@@ -19,6 +20,7 @@ from app.models.journal import Journal, TypeEvenement
 from app.utils.files import chemin_dans_storage
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
+logger = logging.getLogger(__name__)
 
 
 def require_api_token(f):
@@ -135,8 +137,13 @@ def source_sync(source_id):
             "fichiers_ignores": resultat.fichiers_ignores,
             "erreurs": resultat.erreurs
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:
+        logger.error(
+            "Erreur synchronisation API source %s (%s)",
+            source_id,
+            type(exc).__name__,
+        )
+        return jsonify({"error": "Synchronization failed"}), 500
 
 
 @api_bp.route("/sources/<int:source_id>/status")
@@ -434,29 +441,4 @@ def openapi_spec():
 
 @api_bp.route("/docs")
 def swagger_ui():
-    html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>API Documentation — Modes Degrades</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <style>
-        body { margin: 0; padding: 0; }
-        .swagger-ui .topbar { display: none; }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script>
-        SwaggerUIBundle({
-            url: "/api/v1/openapi.json",
-            dom_id: '#swagger-ui',
-            presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-            layout: "BaseLayout"
-        });
-    </script>
-</body>
-</html>
-    """
-    return render_template_string(html)
+    return render_template("api/docs.html")

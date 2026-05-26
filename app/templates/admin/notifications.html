@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Notifications — Administration{% endblock %}
+{% block title %}Notifications - Administration{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -51,7 +51,7 @@
             {% if config.user %}
               {{ config.user.username }}
             {% else %}
-              <span class="text-muted">—</span>
+              <span class="text-muted">-</span>
             {% endif %}
           </td>
           <td>
@@ -81,10 +81,9 @@
               <i class="bi bi-pencil"></i>
             </a>
             <form action="{{ url_for('admin.notification_supprimer', config_id=config.id) }}"
-                  method="post" class="d-inline">
+                  method="post" class="d-inline" data-confirm="Supprimer ce destinataire ?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
-                      onclick="return confirm('Supprimer ce destinataire ?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
                 <i class="bi bi-trash"></i>
               </button>
             </form>

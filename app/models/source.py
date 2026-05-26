@@ -23,7 +23,7 @@ class Source(db.Model):
     port = db.Column(db.Integer, nullable=True)
     chemin_distant = db.Column(db.Text, nullable=False)
 
-    # Colonnes physiques chiffrées — accédées via les propriétés .login / .mot_de_passe
+    # Colonnes physiques chiffrées - accédées via les propriétés .login / .mot_de_passe
     _login = db.Column("login", db.Text, nullable=True)
     _mot_de_passe = db.Column("mot_de_passe", db.Text, nullable=True)
 

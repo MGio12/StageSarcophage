@@ -1,11 +1,12 @@
 """
 Routes d'authentification.
 
-Section 2.6 du CDC — accès protégé par mot de passe.
-Phase 2 — authentification LDAP/AD avec fallback local.
+Section 2.6 du CDC - accès protégé par mot de passe.
+Phase 2 - authentification LDAP/AD avec fallback local.
 """
 import logging
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -17,6 +18,15 @@ from app.models.role import Role
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _is_safe_next_url(target: str | None) -> bool:
+    if not target or not target.startswith("/"):
+        return False
+    if target.startswith(("//", "/\\")):
+        return False
+    parsed = urlsplit(target)
+    return not parsed.scheme and not parsed.netloc
 
 
 def _authentifier_utilisateur(username: str, password: str):
@@ -39,8 +49,11 @@ def _authentifier_utilisateur(username: str, password: str):
                 db.session.commit()
                 logger.info("Utilisateur LDAP cree localement : %s", username)
             elif user.auth_provider != "ldap":
-                user.auth_provider = "ldap"
-                db.session.commit()
+                logger.warning(
+                    "Authentification LDAP refusee pour le compte local existant : %s",
+                    username,
+                )
+                return None
             return user
 
     user = User.query.filter_by(username=username).first()
@@ -71,7 +84,7 @@ def login():
             db.session.commit()
             login_user(user, remember=request.form.get("remember"))
             next_page = request.args.get("next")
-            if next_page and next_page.startswith("/"):
+            if _is_safe_next_url(next_page):
                 return redirect(next_page)
             return redirect(url_for("main.dashboard"))
 

@@ -1,7 +1,7 @@
 """
 Modèle de rôles pour la gestion des permissions.
 
-Section 8.2 du CDC — Phase 2 : gestion des rôles.
+Section 8.2 du CDC - Phase 2 : gestion des rôles.
 """
 from datetime import datetime, timezone
 

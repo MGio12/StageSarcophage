@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Nouveau token API — Administration{% endblock %}
+{% block title %}Nouveau token API - Administration{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -22,7 +22,7 @@
           <div class="mb-3">
             <label for="user_id" class="form-label">Utilisateur associe *</label>
             <select class="form-select" id="user_id" name="user_id" required>
-              <option value="">— Choisir un utilisateur —</option>
+              <option value="">- Choisir un utilisateur -</option>
               {% for user in users %}
               <option value="{{ user.id }}">
                 {{ user.username }}{% if user.role %} ({{ user.role.nom }}){% endif %}

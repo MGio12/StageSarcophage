@@ -1,7 +1,7 @@
 """
 Connecteur SFTP pour l'accès aux serveurs Linux via SSH.
 
-Section 3.4 du CDC — protocole SFTP via paramiko.
+Section 3.4 du CDC - protocole SFTP via paramiko.
 Chemin distant attendu : chemin Unix absolu (ex : /home/partage/modes-degrades).
 """
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import logging
+import posixpath
 import stat as stat_module
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -54,6 +55,13 @@ class HostKeyNewError(Exception):
         self.fingerprint = fingerprint
         self.key_type = key_type
         super().__init__(f"Unknown host key: {key_type} {fingerprint}")
+
+
+def _nom_fichier_distant_sur(nom: str) -> bool:
+    """Refuse les noms capables de sortir du dossier distant configuré."""
+    if not nom or nom in {".", ".."}:
+        return False
+    return posixpath.basename(nom) == nom and "\\" not in nom
 
 
 def _calculer_fingerprint(key: paramiko.PKey) -> str:
@@ -163,11 +171,8 @@ def lister_fichiers(source, trust_new_key: bool = False) -> list[FichierDistant]
     client = paramiko.SSHClient()
     source_id = getattr(source, 'id', None)
 
-    if source_id:
-        policy = StrictHostKeyPolicy(source_id, trust_new=trust_new_key)
-        client.set_missing_host_key_policy(policy)
-    else:
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+    policy = StrictHostKeyPolicy(source_id or 0, trust_new=trust_new_key)
+    client.set_missing_host_key_policy(policy)
 
     try:
         client.connect(
@@ -189,6 +194,12 @@ def lister_fichiers(source, trust_new_key: bool = False) -> list[FichierDistant]
         try:
             for attr in sftp.listdir_attr(source.chemin_distant):
                 if not stat_module.S_ISREG(attr.st_mode):
+                    continue
+                if not _nom_fichier_distant_sur(attr.filename):
+                    logger.warning(
+                        "SFTP : nom de fichier distant ignore pour %s : %r",
+                        source.adresse, attr.filename
+                    )
                     continue
                 if not fnmatch.fnmatch(attr.filename, filtre):
                     continue
@@ -216,11 +227,8 @@ def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: s
     client = paramiko.SSHClient()
     source_id = getattr(source, 'id', None)
 
-    if source_id:
-        policy = StrictHostKeyPolicy(source_id, trust_new=False)
-        client.set_missing_host_key_policy(policy)
-    else:
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+    policy = StrictHostKeyPolicy(source_id or 0, trust_new=False)
+    client.set_missing_host_key_policy(policy)
 
     try:
         client.connect(
@@ -247,13 +255,13 @@ def tester_connexion(source, trust_new_key: bool = False) -> ResultatConnexion:
         fichiers = lister_fichiers(source, trust_new_key=trust_new_key)
         return ResultatConnexion(
             succes=True,
-            message=f"Connexion réussie — {len(fichiers)} fichier(s) trouvé(s)",
+            message=f"Connexion réussie - {len(fichiers)} fichier(s) trouvé(s)",
             nb_fichiers=len(fichiers),
             fichiers=fichiers,
         )
     except HostKeyNewError as exc:
         logger.info(
-            "SFTP : nouvelle clé hôte pour %s — %s %s",
+            "SFTP : nouvelle clé hôte pour %s - %s %s",
             source.adresse, exc.key_type, exc.fingerprint[:16]
         )
         return ResultatConnexion(
@@ -264,7 +272,7 @@ def tester_connexion(source, trust_new_key: bool = False) -> ResultatConnexion:
         )
     except HostKeyMismatchError as exc:
         logger.warning(
-            "SFTP : fingerprint modifié pour %s — attendu %s, reçu %s",
+            "SFTP : fingerprint modifié pour %s - attendu %s, reçu %s",
             source.adresse, exc.expected[:16], exc.received[:16]
         )
         return ResultatConnexion(
@@ -276,24 +284,25 @@ def tester_connexion(source, trust_new_key: bool = False) -> ResultatConnexion:
             "SFTP : authentification refusée pour %s@%s", source.login, source.adresse
         )
         return ResultatConnexion(
-            succes=False, message=f"Authentification refusée : {exc}"
+            succes=False, message="Authentification refusée."
         )
     except paramiko.SSHException as exc:
-        logger.warning("SFTP : erreur SSH pour %s — %s", source.adresse, exc)
-        return ResultatConnexion(succes=False, message=str(exc))
+        logger.warning("SFTP : erreur SSH pour %s - %s", source.adresse, exc)
+        return ResultatConnexion(succes=False, message="Connexion SFTP impossible.")
     except OSError as exc:
-        logger.warning("SFTP : hôte inaccessible %s — %s", source.adresse, exc)
-        return ResultatConnexion(succes=False, message=str(exc))
+        logger.warning("SFTP : hôte inaccessible %s - %s", source.adresse, exc)
+        return ResultatConnexion(succes=False, message="Hôte SFTP inaccessible.")
     except Exception as exc:
         logger.exception("SFTP : erreur inattendue pour %s", source.adresse)
-        return ResultatConnexion(succes=False, message=str(exc))
+        return ResultatConnexion(succes=False, message="Connexion SFTP impossible.")
 
 
 def accepter_fingerprint(source) -> bool:
     """Accepte et enregistre le fingerprint actuel du serveur."""
     port = source.port or 22
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.WarningPolicy())
+    # Explicit trust-on-first-use path triggered by a user accepting the displayed fingerprint.
+    client.set_missing_host_key_policy(paramiko.WarningPolicy())  # nosec B507
 
     try:
         client.connect(

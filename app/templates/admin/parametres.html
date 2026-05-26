@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Parametres — Administration{% endblock %}
+{% block title %}Parametres - Administration{% endblock %}
 
 {% block content %}
 <div class="mb-4">
@@ -29,7 +29,7 @@
       <div class="mb-3 form-check">
         <input type="checkbox" class="form-check-input" id="rapport_auto_active_check"
                {% if rapport_active and rapport_active.valeur in ('true', '1') %}checked{% endif %}
-               onchange="document.getElementById('rapport_auto_active').value = this.checked ? 'true' : 'false'">
+               data-boolean-target="rapport_auto_active">
         <input type="hidden" id="rapport_auto_active" name="rapport_auto_active"
                value="{{ rapport_active.valeur if rapport_active else 'false' }}">
         <label class="form-check-label" for="rapport_auto_active_check">

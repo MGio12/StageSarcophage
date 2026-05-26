@@ -16,12 +16,13 @@ class TestModeleUser:
 
     def test_password_hash_different_du_clair(self, db):
         user = User(username="testuser2")
-        user.set_password("monmotdepasse")
+        mot_de_passe_test = "monmotdepasse"  # pragma: allowlist secret
+        user.set_password(mot_de_passe_test)
         db.session.add(user)
         db.session.commit()
 
-        assert user.password_hash != "monmotdepasse"
-        assert "monmotdepasse" not in user.password_hash
+        assert user.password_hash != mot_de_passe_test
+        assert mot_de_passe_test not in user.password_hash
 
     def test_check_password_correct(self, db):
         user = User(username="testuser3")

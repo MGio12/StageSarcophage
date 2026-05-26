@@ -49,6 +49,10 @@ class Config:
     # Corbeille (période de grâce avant suppression définitive)
     CORBEILLE_RETENTION_JOURS = int(os.environ.get("CORBEILLE_RETENTION_JOURS", "30"))
 
+    # Cookies de session
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+
     # Déploiement HTTP derrière reverse proxy TLS par défaut en Docker
     FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "false").lower() in ("true", "1", "yes")
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
@@ -61,8 +65,9 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
+    FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "true").lower() in ("true", "1", "yes")
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() in ("true", "1", "yes")
+    PREFERRED_URL_SCHEME = "https"
 
 
 def validate_production_config():

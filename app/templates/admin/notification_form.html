@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if config %}Modifier{% else %}Nouveau{% endif %} destinataire — Administration{% endblock %}
+{% block title %}{% if config %}Modifier{% else %}Nouveau{% endif %} destinataire - Administration{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -24,7 +24,7 @@
           <div class="mb-3">
             <label for="user_id" class="form-label">Utilisateur associe (optionnel)</label>
             <select class="form-select" id="user_id" name="user_id">
-              <option value="">— Aucun —</option>
+              <option value="">- Aucun -</option>
               {% for user in users %}
               <option value="{{ user.id }}"
                       {% if config and config.user_id == user.id %}selected{% endif %}>

@@ -27,6 +27,7 @@ def create_app(config_name=None):
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
+    app.jinja_env.globals.setdefault("csp_nonce", lambda: "")
 
     if app.config.get("TRUST_PROXY"):
         from werkzeug.middleware.proxy_fix import ProxyFix
@@ -47,13 +48,25 @@ def create_app(config_name=None):
             force_https=app.config.get("FORCE_HTTPS", False),
             session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", False),
             content_security_policy={
-                "default-src": "'self'",
-                "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-                "style-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-                "img-src": "'self' data:",
-                "font-src": "'self' data: https://cdn.jsdelivr.net",
-                "frame-src": "'self'",
+                "default-src": ["'self'"],
+                "script-src": ["'self'", "https://cdn.jsdelivr.net"],
+                "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+                "img-src": ["'self'", "data:"],
+                "font-src": ["'self'", "data:", "https://cdn.jsdelivr.net"],
+                "connect-src": ["'self'"],
+                "frame-src": ["'self'"],
+                "frame-ancestors": ["'self'"],
+                "object-src": ["'none'"],
+                "base-uri": ["'self'"],
+                "form-action": ["'self'"],
             },
+            content_security_policy_nonce_in=["script-src"],
+            permissions_policy={
+                "geolocation": "()",
+                "microphone": "()",
+                "camera": "()",
+            },
+            referrer_policy="strict-origin-when-cross-origin",
         )
 
     # Enregistrement des modèles pour que SQLAlchemy les connaisse
@@ -85,7 +98,7 @@ def create_app(config_name=None):
     @app.template_filter("format_taille")
     def format_taille(taille):
         if not taille:
-            return "—"
+            return "-"
         if taille < 1024:
             return f"{taille} o"
         if taille < 1024 * 1024:

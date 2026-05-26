@@ -1,4 +1,4 @@
-"""Tests unitaires du connecteur SMB — sans serveur réel (mock smbclient)."""
+"""Tests unitaires du connecteur SMB - sans serveur réel (mock smbclient)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -110,6 +110,18 @@ class TestListerFichiersSMB:
         _, kwargs = mock_register.call_args
         assert kwargs.get("port") == 445
 
+    @patch("app.services.smb_service.smbclient.reset_connection_cache")
+    @patch("app.services.smb_service.smbclient.scandir")
+    @patch("app.services.smb_service.smbclient.register_session")
+    def test_ignore_les_noms_distants_dangereux(self, mock_register, mock_scandir, mock_reset):
+        mock_scandir.return_value = iter([
+            _mock_entry("..\\secret.pdf"),
+            _mock_entry("../secret.pdf"),
+            _mock_entry("fiche.pdf"),
+        ])
+        result = lister_fichiers(_Source())
+        assert [f.nom for f in result] == ["fiche.pdf"]
+
 
 class TestTesterConnexionSMB:
     @patch("app.services.smb_service.smbclient.reset_connection_cache")
@@ -141,7 +153,7 @@ class TestTesterConnexionSMB:
         mock_register.side_effect = SMBException("Accès refusé")
         result = tester_connexion(_Source())
         assert result.succes is False
-        assert "Accès refusé" in result.message
+        assert result.message == "Connexion SMB impossible."
         assert result.nb_fichiers == 0
 
     @patch("app.services.smb_service.smbclient.reset_connection_cache")
@@ -150,7 +162,7 @@ class TestTesterConnexionSMB:
         mock_register.side_effect = OSError("Hôte inaccessible")
         result = tester_connexion(_Source())
         assert result.succes is False
-        assert "Hôte inaccessible" in result.message
+        assert result.message == "Connexion SMB impossible."
 
     @patch("app.services.smb_service.smbclient.reset_connection_cache")
     @patch("app.services.smb_service.smbclient.scandir")

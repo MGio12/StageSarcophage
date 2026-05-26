@@ -1,7 +1,7 @@
 """
 Service d'authentification LDAP / Active Directory.
 
-Phase 2 — CDC §8.2 : Authentification LDAP / Active Directory.
+Phase 2 - CDC §8.2 : Authentification LDAP / Active Directory.
 """
 import logging
 from dataclasses import dataclass
@@ -9,6 +9,7 @@ from typing import Optional
 
 from ldap3 import Server, Connection, ALL, SUBTREE
 from ldap3.core.exceptions import LDAPException, LDAPBindError
+from ldap3.utils.conv import escape_filter_chars
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,10 @@ def get_ldap_config() -> Optional[LDAPConfig]:
     )
 
 
+def _filtre_utilisateur(config: LDAPConfig, username: str) -> str:
+    return config.user_filter.format(username=escape_filter_chars(username))
+
+
 def authentifier_ldap(username: str, password: str) -> bool:
     """
     Authentifie un utilisateur via LDAP.
@@ -94,14 +99,14 @@ def authentifier_ldap(username: str, password: str) -> bool:
             logger.warning("Echec bind LDAP pour %s : %s", username, conn.result)
             return False
 
-    except LDAPBindError as e:
-        logger.warning("Erreur bind LDAP pour %s : %s", username, e)
+    except LDAPBindError as exc:
+        logger.warning("Erreur bind LDAP pour %s (%s)", username, type(exc).__name__)
         return False
-    except LDAPException as e:
-        logger.error("Erreur LDAP : %s", e)
+    except LDAPException as exc:
+        logger.error("Erreur LDAP (%s)", type(exc).__name__)
         return False
-    except Exception as e:
-        logger.exception("Erreur inattendue LDAP : %s", e)
+    except Exception as exc:
+        logger.error("Erreur inattendue LDAP (%s)", type(exc).__name__)
         return False
 
 
@@ -132,7 +137,7 @@ def recuperer_infos_utilisateur(username: str) -> Optional[LDAPUserInfo]:
             logger.error("Impossible de se connecter au LDAP avec le bind DN")
             return None
 
-        search_filter = config.user_filter.format(username=username)
+        search_filter = _filtre_utilisateur(config, username)
         conn.search(
             config.base_dn,
             search_filter,
@@ -154,8 +159,8 @@ def recuperer_infos_utilisateur(username: str) -> Optional[LDAPUserInfo]:
         conn.unbind()
         return info
 
-    except LDAPException as e:
-        logger.error("Erreur LDAP lors de la recherche de %s : %s", username, e)
+    except LDAPException as exc:
+        logger.error("Erreur LDAP lors de la recherche de %s (%s)", username, type(exc).__name__)
         return None
 
 
@@ -167,7 +172,7 @@ def _trouver_dn_utilisateur(server, config: LDAPConfig, username: str) -> Option
             logger.error("Impossible de se connecter au LDAP avec le bind DN")
             return None
 
-        search_filter = config.user_filter.format(username=username)
+        search_filter = _filtre_utilisateur(config, username)
         conn.search(
             config.base_dn,
             search_filter,
@@ -183,8 +188,8 @@ def _trouver_dn_utilisateur(server, config: LDAPConfig, username: str) -> Option
         conn.unbind()
         return None
 
-    except LDAPException as e:
-        logger.error("Erreur lors de la recherche DN : %s", e)
+    except LDAPException as exc:
+        logger.error("Erreur lors de la recherche DN (%s)", type(exc).__name__)
         return None
 
 
@@ -212,16 +217,22 @@ def tester_connexion_ldap() -> tuple[bool, str]:
         if conn.bind():
             info = f"Connecte a {config.host}:{config.port}"
             if server.info:
-                info += f" — {server.info.vendor_name or 'LDAP'}"
+                info += f" - {server.info.vendor_name or 'LDAP'}"
             conn.unbind()
             return True, info
         else:
-            return False, f"Echec bind : {conn.result.get('description', 'erreur inconnue')}"
+            logger.warning(
+                "Echec bind LDAP test : %s",
+                conn.result.get("description", "erreur inconnue"),
+            )
+            return False, "Echec bind LDAP."
 
-    except LDAPException as e:
-        return False, f"Erreur LDAP : {e}"
-    except Exception as e:
-        return False, f"Erreur : {e}"
+    except LDAPException as exc:
+        logger.warning("Erreur LDAP lors du test de connexion (%s)", type(exc).__name__)
+        return False, "Erreur LDAP."
+    except Exception as exc:
+        logger.error("Erreur inattendue lors du test LDAP (%s)", type(exc).__name__)
+        return False, "Erreur LDAP."
 
 
 def get_group_mapping() -> dict:
@@ -315,9 +326,9 @@ def synchroniser_groupes_utilisateurs() -> dict:
             else:
                 stats["unchanged"] += 1
 
-        except Exception as e:
-            stats["errors"].append(f"{user.username}: {e}")
-            logger.warning("Erreur sync groupes pour %s: %s", user.username, e)
+        except Exception as exc:
+            stats["errors"].append(f"{user.username}: erreur synchronisation")
+            logger.warning("Erreur sync groupes pour %s (%s)", user.username, type(exc).__name__)
 
     db.session.commit()
     return stats

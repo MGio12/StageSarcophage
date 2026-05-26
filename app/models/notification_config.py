@@ -1,7 +1,7 @@
 """
 Modèle de configuration des notifications.
 
-Phase 2 — CDC §8.2 : Notifications par email.
+Phase 2 - CDC §8.2 : Notifications par email.
 """
 from datetime import datetime, timezone
 

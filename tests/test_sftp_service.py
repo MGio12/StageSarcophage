@@ -1,4 +1,4 @@
-"""Tests unitaires du connecteur SFTP — sans serveur réel (mock paramiko)."""
+"""Tests unitaires du connecteur SFTP - sans serveur réel (mock paramiko)."""
 from __future__ import annotations
 
 import stat as stat_module
@@ -118,6 +118,16 @@ class TestListerFichiersSFTP:
         assert len(result) == 1
         assert result[0].nom == "fiche.pdf"
 
+    @patch("app.services.sftp_service.paramiko.SSHClient")
+    def test_ignore_les_noms_distants_dangereux(self, mock_ssh_class):
+        mock_ssh_class.return_value = _build_ssh_mock([
+            _mock_attr("../secret.pdf"),
+            _mock_attr("..\\secret.pdf"),
+            _mock_attr("fiche.pdf"),
+        ])
+        result = lister_fichiers(_Source())
+        assert [f.nom for f in result] == ["fiche.pdf"]
+
 
 class TestTesterConnexionSFTP:
     @patch("app.services.sftp_service.paramiko.SSHClient")
@@ -155,7 +165,7 @@ class TestTesterConnexionSFTP:
         mock_ssh_class.return_value = mock_ssh
         result = tester_connexion(_Source())
         assert result.succes is False
-        assert "Négociation SSH échouée" in result.message
+        assert result.message == "Connexion SFTP impossible."
 
     @patch("app.services.sftp_service.paramiko.SSHClient")
     def test_echec_hote_inaccessible(self, mock_ssh_class):
@@ -164,7 +174,7 @@ class TestTesterConnexionSFTP:
         mock_ssh_class.return_value = mock_ssh
         result = tester_connexion(_Source())
         assert result.succes is False
-        assert "Network unreachable" in result.message
+        assert result.message == "Hôte SFTP inaccessible."
 
     @patch("app.services.sftp_service.paramiko.SSHClient")
     def test_echec_listdir_attr(self, mock_ssh_class):

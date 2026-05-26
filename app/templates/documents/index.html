@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Documents — Modes Dégradés{% endblock %}
+{% block title %}Documents - Modes Dégradés{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -123,15 +123,15 @@
               {% if doc.source %}
                 <a href="{{ url_for('sources.detail', source_id=doc.source.id) }}"
                    class="text-decoration-none text-muted">{{ doc.source.nom }}</a>
-              {% else %}—{% endif %}
+              {% else %}-{% endif %}
             </td>
             <td class="small text-muted text-nowrap">
-              {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '—' }}
+              {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '-' }}
             </td>
             <td class="small text-nowrap">
               {% if age is not none %}
                 {{ age }} j
-              {% else %}—{% endif %}
+              {% else %}-{% endif %}
             </td>
             <td class="small text-muted">{{ doc.taille_octets|format_taille }}</td>
             <td class="text-center">
@@ -238,17 +238,24 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 const selectAll = document.getElementById('selectAll');
 const checks = document.querySelectorAll('.doc-check');
 const btnZip = document.getElementById('btnZip');
+
+function setZipButtonDefault() {
+  const icon = document.createElement('i');
+  icon.className = 'bi bi-file-zip';
+  icon.setAttribute('aria-hidden', 'true');
+  btnZip.replaceChildren(icon, document.createTextNode(' Télécharger la sélection (ZIP)'));
+}
 
 function updateZipBtn() {
   const nb = document.querySelectorAll('.doc-check:checked').length;
   if (btnZip) {
     btnZip.disabled = nb === 0;
-    if (nb > 0) btnZip.textContent = `Télécharger la sélection (${nb}) — ZIP`;
-    else btnZip.innerHTML = '<i class="bi bi-file-zip"></i> Télécharger la sélection (ZIP)';
+    if (nb > 0) btnZip.textContent = `Télécharger la sélection (${nb}) - ZIP`;
+    else setZipButtonDefault();
   }
 }
 

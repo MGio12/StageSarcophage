@@ -1,7 +1,7 @@
 """
 Service de generation et envoi automatique des rapports.
 
-Phase 2 — D3 : Planification rapports.
+Phase 2 - D3 : Planification rapports.
 """
 import logging
 from datetime import datetime, timezone
@@ -38,7 +38,7 @@ def generer_et_envoyer_rapport() -> int:
     date_str = maintenant.strftime("%Y-%m-%d")
     nom_fichier = f"rapport_conformite_{date_str}.pdf"
 
-    sujet = f"[RAPPORT] Conformite documents — {date_str}"
+    sujet = f"[RAPPORT] Conformite documents - {date_str}"
     corps_html = f"""
     <html>
     <body>
@@ -47,7 +47,7 @@ def generer_et_envoyer_rapport() -> int:
         genere le {maintenant.strftime('%d/%m/%Y a %H:%M')} UTC.</p>
         <p>Ce rapport contient la liste des documents par source avec leur statut actuel.</p>
         <hr>
-        <p><em>Application Modes Degrades — CLCC</em></p>
+        <p><em>Application Modes Degrades - CLCC</em></p>
     </body>
     </html>
     """

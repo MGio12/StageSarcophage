@@ -1,7 +1,7 @@
 """
 Modèle utilisateur pour l'authentification.
 
-Section 2.6 du CDC — authentification par mot de passe.
+Section 2.6 du CDC - authentification par mot de passe.
 """
 from datetime import datetime, timezone
 import secrets

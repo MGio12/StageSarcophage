@@ -66,7 +66,7 @@ def demarrer_scheduler(app) -> None:
             )
 
     _scheduler.start()
-    logger.info("Scheduler démarré — %d job(s)", len(_scheduler.get_jobs()))
+    logger.info("Scheduler démarré - %d job(s)", len(_scheduler.get_jobs()))
 
 
 def arreter_scheduler() -> None:

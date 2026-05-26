@@ -119,7 +119,7 @@ def modifier(source_id):
         flash(f"Source « {source.nom} » modifiée.", "success")
         return redirect(url_for("sources.detail", source_id=source.id))
     return render_template(
-        "sources/form.html", source=source, titre=f"Modifier — {source.nom}"
+        "sources/form.html", source=source, titre=f"Modifier - {source.nom}"
     )
 
 
@@ -167,8 +167,8 @@ def tester(source_id):
     try:
         resultat = _tester_connexion_source(source)
     except Exception as exc:
-        logger.exception("Erreur test source %s", source.nom)
-        resultat = {"succes": False, "message": str(exc)}
+        logger.error("Erreur test source %s (%s)", source.nom, type(exc).__name__)
+        resultat = {"succes": False, "message": "Test de connexion impossible."}
 
     if request.accept_mimetypes.best == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify(resultat)
@@ -202,7 +202,8 @@ def _synchroniser_source_maintenant(source: Source) -> None:
             "success" if resultat.erreurs == 0 else "warning",
         )
     except Exception as exc:
-        flash(f"Erreur lors de la synchronisation : {exc}", "danger")
+        logger.error("Erreur synchronisation source %s (%s)", source.nom, type(exc).__name__)
+        flash("Erreur lors de la synchronisation.", "danger")
 
 
 @sources_bp.route("/<int:source_id>/purger", methods=["POST"])
@@ -220,8 +221,8 @@ def purger(source_id):
             "success" if resultat.erreurs == 0 else "warning",
         )
     except Exception as exc:
-        logger.exception("Erreur purge source %s", source.nom)
-        flash(f"Erreur lors de la purge : {exc}", "danger")
+        logger.error("Erreur purge source %s (%s)", source.nom, type(exc).__name__)
+        flash("Erreur lors de la purge.", "danger")
     return redirect(url_for("sources.detail", source_id=source_id))
 
 
@@ -262,8 +263,8 @@ def synchroniser_toutes():
             mettre_a_jour_statuts(source)
             total_copies += resultat.fichiers_copies
             total_erreurs += resultat.erreurs
-        except Exception:
-            logger.exception("Erreur sync source %s", source.nom)
+        except Exception as exc:
+            logger.error("Erreur sync source %s (%s)", source.nom, type(exc).__name__)
             total_erreurs += 1
     flash(
         f"Synchronisation globale : {total_copies} fichier(s) copié(s), "
@@ -275,6 +276,7 @@ def synchroniser_toutes():
 
 @sources_bp.route("/tester-parametres", methods=["POST"])
 @login_required
+@require_permission("sources.edit")
 @limiter.limit("5 per minute")
 def tester_parametres():
     """Test de connexion AJAX avec les valeurs du formulaire (sans source en BD)."""
@@ -311,7 +313,8 @@ def tester_parametres():
             response["fingerprint_key_type"] = resultat.fingerprint_key_type
         return jsonify(response)
     except Exception as exc:
-        return jsonify({"succes": False, "message": str(exc)})
+        logger.error("Erreur test parametres source (%s)", type(exc).__name__)
+        return jsonify({"succes": False, "message": "Test de connexion impossible."})
 
 
 # ---------------------------------------------------------------------------
@@ -337,7 +340,7 @@ def _tester_connexion_source(source: Source) -> dict:
         fichiers = _lister_local(source)
         return {
             "succes": True,
-            "message": f"Connexion locale réussie — {len(fichiers)} fichier(s) trouvé(s)",
+            "message": f"Connexion locale réussie - {len(fichiers)} fichier(s) trouvé(s)",
             "nb_fichiers": len(fichiers),
         }
     else:

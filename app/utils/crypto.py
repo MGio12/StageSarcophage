@@ -3,7 +3,7 @@ Chiffrement symétrique des identifiants de connexion aux sources distantes.
 
 Algorithme : Fernet (AES-128-CBC + HMAC-SHA256), équivalent sécuritaire à AES-256
 conformément à la section 3.1 du CDC. La clé est chargée depuis ENCRYPTION_KEY
-(variable d'environnement) via la config Flask — elle ne transite jamais en clair.
+(variable d'environnement) via la config Flask - elle ne transite jamais en clair.
 
 Générer une clé :
     python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Token cree — Administration{% endblock %}
+{% block title %}Token cree - Administration{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -19,7 +19,7 @@
           <div class="input-group">
             <input type="text" class="form-control font-monospace" id="token-value"
                    value="{{ token }}" readonly>
-            <button class="btn btn-outline-secondary" type="button" onclick="copyToken()">
+            <button class="btn btn-outline-secondary" type="button" id="copy-token-btn">
               <i class="bi bi-clipboard"></i> Copier
             </button>
           </div>
@@ -41,15 +41,33 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function copyToken() {
+<script nonce="{{ csp_nonce() }}">
+document.getElementById('copy-token-btn').addEventListener('click', async function () {
   const input = document.getElementById('token-value');
+  const btn = this;
+  const originalNodes = Array.from(btn.childNodes).map(node => node.cloneNode(true));
+
   input.select();
-  document.execCommand('copy');
-  const btn = event.target.closest('button');
-  const originalHTML = btn.innerHTML;
-  btn.innerHTML = '<i class="bi bi-check"></i> Copie !';
-  setTimeout(() => btn.innerHTML = originalHTML, 2000);
-}
+  let copied = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(input.value);
+      copied = true;
+    } catch (error) {
+      copied = false;
+    }
+  }
+  if (!copied) {
+    document.execCommand('copy');
+  }
+
+  const icon = document.createElement('i');
+  icon.className = 'bi bi-check';
+  icon.setAttribute('aria-hidden', 'true');
+  btn.replaceChildren(icon, document.createTextNode(' Copie !'));
+  setTimeout(() => {
+    btn.replaceChildren(...originalNodes.map(node => node.cloneNode(true)));
+  }, 2000);
+});
 </script>
 {% endblock %}

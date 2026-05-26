@@ -1,7 +1,7 @@
 """
 Connecteur SMB/CIFS pour l'accès aux partages réseau Windows.
 
-Section 3.4 du CDC — protocole SMB/CIFS via smbprotocol/smbclient.
+Section 3.4 du CDC - protocole SMB/CIFS via smbprotocol/smbclient.
 Chemin distant attendu : chemin UNC complet (\\\\serveur\\partage\\sous-dossier)
 ou chemin relatif au partage (partage\\sous-dossier) combiné avec source.adresse.
 """
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
+import ntpath
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -35,6 +36,14 @@ class ResultatConnexion:
     message: str
     nb_fichiers: int = 0
     fichiers: list[FichierDistant] = field(default_factory=list)
+
+
+def _nom_fichier_distant_sur(nom: str) -> bool:
+    """Refuse les noms capables de sortir du dossier SMB configuré."""
+    if not nom or nom in {".", ".."}:
+        return False
+    nom_normalise = nom.replace("/", "\\")
+    return ntpath.basename(nom_normalise) == nom_normalise
 
 
 def _construire_chemin_unc(source) -> str:
@@ -64,6 +73,12 @@ def lister_fichiers(source) -> list[FichierDistant]:
         for entry in smbclient.scandir(chemin_unc):
             if not entry.is_file():
                 continue
+            if not _nom_fichier_distant_sur(entry.name):
+                logger.warning(
+                    "SMB : nom de fichier distant ignore pour %s : %r",
+                    chemin_unc, entry.name
+                )
+                continue
             if not fnmatch.fnmatch(entry.name, filtre):
                 continue
             stat = entry.stat()
@@ -80,8 +95,8 @@ def lister_fichiers(source) -> list[FichierDistant]:
     finally:
         try:
             smbclient.reset_connection_cache()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("SMB : impossible de réinitialiser le cache de connexion : %s", exc)
 
     return fichiers
 
@@ -103,8 +118,8 @@ def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: s
     finally:
         try:
             smbclient.reset_connection_cache()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("SMB : impossible de réinitialiser le cache de connexion : %s", exc)
 
 
 def tester_connexion(source) -> ResultatConnexion:
@@ -114,13 +129,13 @@ def tester_connexion(source) -> ResultatConnexion:
         fichiers = lister_fichiers(source)
         return ResultatConnexion(
             succes=True,
-            message=f"Connexion réussie — {len(fichiers)} fichier(s) trouvé(s)",
+            message=f"Connexion réussie - {len(fichiers)} fichier(s) trouvé(s)",
             nb_fichiers=len(fichiers),
             fichiers=fichiers,
         )
     except SMBException as exc:
-        logger.warning("SMB : échec connexion à %s — %s", chemin_unc, exc)
-        return ResultatConnexion(succes=False, message=str(exc))
+        logger.warning("SMB : échec connexion à %s - %s", chemin_unc, exc)
+        return ResultatConnexion(succes=False, message="Connexion SMB impossible.")
     except Exception as exc:
         logger.exception("SMB : erreur inattendue pour %s", chemin_unc)
-        return ResultatConnexion(succes=False, message=str(exc))
+        return ResultatConnexion(succes=False, message="Connexion SMB impossible.")

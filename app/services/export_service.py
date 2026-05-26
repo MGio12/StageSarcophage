@@ -1,7 +1,7 @@
 """
 Service d'export des rapports de conformité.
 
-Phase 2 — CDC §8.2 : Export des rapports de conformité.
+Phase 2 - CDC §8.2 : Export des rapports de conformité.
 """
 import io
 from datetime import datetime, timezone
@@ -155,7 +155,7 @@ def generer_rapport_pdf(source_id: Optional[int] = None) -> bytes:
 
     elements = []
 
-    elements.append(Paragraph("Rapport de conformite — Modes Degrades", title_style))
+    elements.append(Paragraph("Rapport de conformite - Modes Degrades", title_style))
     elements.append(Paragraph(
         f"Genere le {datetime.now(timezone.utc).strftime('%d/%m/%Y a %H:%M')} UTC",
         styles["Normal"]

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Journaux — Modes Dégradés{% endblock %}
+{% block title %}Journaux - Modes Dégradés{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -82,7 +82,7 @@
         {% for j in journaux %}
         <tr>
           <td class="small text-muted text-nowrap">
-            {{ j.created_at.strftime('%d/%m/%Y %H:%M:%S') if j.created_at else '—' }}
+            {{ j.created_at.strftime('%d/%m/%Y %H:%M:%S') if j.created_at else '-' }}
           </td>
           <td>
             {% if j.type_evenement.value == 'erreur' %}
@@ -105,10 +105,10 @@
             {% if j.source %}
               <a href="{{ url_for('sources.detail', source_id=j.source.id) }}"
                  class="text-decoration-none text-muted">{{ j.source.nom }}</a>
-            {% else %}—{% endif %}
+            {% else %}-{% endif %}
           </td>
           <td class="small text-muted">
-            {% if j.user %}{{ j.user.username }}{% else %}—{% endif %}
+            {% if j.user %}{{ j.user.username }}{% else %}-{% endif %}
           </td>
           <td class="small">{{ j.message }}</td>
         </tr>
@@ -122,7 +122,7 @@
   <div class="card-footer d-flex justify-content-between align-items-center">
     <span class="small text-muted">
       Page {{ pagination.page }} / {{ pagination.pages }}
-      — {{ pagination.total }} événement(s)
+      - {{ pagination.total }} événement(s)
     </span>
     <nav>
       <ul class="pagination pagination-sm mb-0">

@@ -1,7 +1,7 @@
 """
 Décorateurs pour la gestion des permissions.
 
-Phase 2 — CDC §8.2 : gestion des rôles.
+Phase 2 - CDC §8.2 : gestion des rôles.
 """
 from functools import wraps
 

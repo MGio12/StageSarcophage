@@ -1,8 +1,8 @@
-# Cahier des charges — Application de gestion des documents de modes dégradés
+# Cahier des charges - Application de gestion des documents de modes dégradés
 
-> **⚠️ DOCUMENT DE RÉFÉRENCE — NE PAS MODIFIER ⚠️**
+> **⚠️ DOCUMENT DE RÉFÉRENCE - NE PAS MODIFIER ⚠️**
 >
-> Ce cahier des charges a été fourni par le maître de stage (DSI — CLCC).
+> Ce cahier des charges a été fourni par le maître de stage (DSI - CLCC).
 > Il constitue le document de référence officiel du projet et ne doit en aucun cas être modifié.
 > Toute évolution ou clarification doit être documentée séparément.
 
@@ -12,7 +12,7 @@
 
 > **Version** : 1.0
 > **Date** : 2026-04-22
-> **Auteur** : DSI — CLCC
+> **Auteur** : DSI - CLCC
 
 ---
 
@@ -250,15 +250,15 @@ journaux
 
 ## 6. Cas d'utilisation principaux
 
-### CU1 — Ajouter une nouvelle source
+### CU1 - Ajouter une nouvelle source
 
 1. L'utilisateur accède à la page Sources et clique sur « Nouvelle source »
 2. Il renseigne les paramètres de connexion (type, adresse, chemin, identifiants, etc.)
-3. Il clique sur « Tester la connexion » — l'application vérifie l'accessibilité et liste les fichiers trouvés
+3. Il clique sur « Tester la connexion » - l'application vérifie l'accessibilité et liste les fichiers trouvés
 4. Il configure la fréquence de synchronisation et la durée de rétention
-5. Il valide — la source est créée et une première synchronisation est déclenchée
+5. Il valide - la source est créée et une première synchronisation est déclenchée
 
-### CU2 — Synchronisation automatique
+### CU2 - Synchronisation automatique
 
 1. Le scheduler déclenche la tâche de synchronisation pour une source
 2. L'application se connecte au serveur distant avec les identifiants stockés
@@ -268,14 +268,14 @@ journaux
 6. Mise à jour de la base de données (métadonnées, date de collecte)
 7. Journalisation de l'opération (succès, erreurs, fichiers ignorés)
 
-### CU3 — Consultation d'un document
+### CU3 - Consultation d'un document
 
 1. L'utilisateur accède à la page Documents
 2. Il filtre par source ou par statut
-3. Il clique sur un document — le PDF s'ouvre dans le viewer intégré
+3. Il clique sur un document - le PDF s'ouvre dans le viewer intégré
 4. Il peut télécharger le fichier si nécessaire
 
-### CU4 — Purge automatique
+### CU4 - Purge automatique
 
 1. Le scheduler déclenche la tâche de purge
 2. Pour chaque source : identification des fichiers dont l'âge dépasse la durée de rétention
@@ -283,7 +283,7 @@ journaux
 4. Mise à jour de la base de données
 5. Journalisation
 
-### CU5 — Détection d'un document obsolète
+### CU5 - Détection d'un document obsolète
 
 1. Lors de la synchronisation ou via le tableau de bord, un document dépasse le seuil d'avertissement
 2. Son statut passe à « avertissement » (orange) puis « critique » (rouge) selon les seuils configurés
@@ -312,7 +312,7 @@ journaux
 
 ## 8. Phasage du développement
 
-### Phase 1 — MVP (Minimum Viable Product)
+### Phase 1 - MVP (Minimum Viable Product)
 
 - Gestion des sources (CRUD + test de connexion)
 - Connexion SFTP (Linux) et SMB (Windows)
@@ -325,7 +325,7 @@ journaux
 - Journaux de synchronisation et de purge
 - Déploiement Docker
 
-### Phase 2 — Améliorations
+### Phase 2 - Améliorations
 
 - Notifications par email (documents obsolètes, erreurs de connexion)
 - Authentification LDAP / Active Directory
@@ -333,7 +333,7 @@ journaux
 - Export des rapports de conformité (liste des documents avec statut)
 - API REST pour intégration avec d'autres outils internes
 
-### Phase 3 — Évolutions
+### Phase 3 - Évolutions
 
 - Support de sources supplémentaires (FTP, WebDAV, S3)
 - OCR sur les PDF pour recherche plein texte
@@ -386,5 +386,5 @@ journaux
 | **Fraîcheur** | Indicateur de l'âge d'un document par rapport à sa dernière modification |
 | **SMB/CIFS** | Protocole de partage de fichiers Windows (Server Message Block) |
 | **SFTP** | Protocole de transfert de fichiers sécurisé via SSH |
-| **HDS** | Hébergement de Données de Santé — certification obligatoire pour le stockage de données de santé en France |
+| **HDS** | Hébergement de Données de Santé - certification obligatoire pour le stockage de données de santé en France |
 

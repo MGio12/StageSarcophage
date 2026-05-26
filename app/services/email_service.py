@@ -1,7 +1,7 @@
 """
 Service d'envoi d'emails pour les notifications.
 
-Phase 2 — CDC §8.2 : Notifications par email.
+Phase 2 - CDC §8.2 : Notifications par email.
 """
 import logging
 import smtplib
@@ -99,13 +99,13 @@ def envoyer_email(destinataire: str, sujet: str, corps_html: str, corps_texte: s
 
 def envoyer_email_test(destinataire: str) -> bool:
     """Envoie un email de test pour vérifier la configuration SMTP."""
-    sujet = "[Test] Configuration SMTP — Modes Dégradés"
+    sujet = "[Test] Configuration SMTP - Modes Dégradés"
     corps_html = """
     <html>
     <body>
         <h2>Test de configuration SMTP</h2>
         <p>Cet email confirme que la configuration SMTP est fonctionnelle.</p>
-        <p><em>Application Modes Dégradés — CLCC</em></p>
+        <p><em>Application Modes Dégradés - CLCC</em></p>
     </body>
     </html>
     """

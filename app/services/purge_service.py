@@ -188,8 +188,12 @@ def nettoyer_corbeille() -> int:
         if os.path.isdir(source_path) and not os.listdir(source_path):
             try:
                 os.rmdir(source_path)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug(
+                    "Corbeille : impossible de supprimer le dossier vide %s : %s",
+                    source_path,
+                    exc,
+                )
 
     if nb_supprimes > 0:
         entree = Journal(
@@ -239,8 +243,12 @@ def lister_corbeille() -> list:
                     "date_suppression": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
                     "taille": stat.st_size
                 })
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(
+                    "Corbeille : impossible de lire les métadonnées de %s : %s",
+                    chemin,
+                    exc,
+                )
 
     return sorted(fichiers, key=lambda f: f["date_suppression"], reverse=True)
 

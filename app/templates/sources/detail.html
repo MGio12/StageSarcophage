@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ source.nom }} — Sources{% endblock %}
+{% block title %}{{ source.nom }} - Sources{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -51,7 +51,7 @@
     {% if not source.deleted_at %}
       <form method="post"
             action="{{ url_for('sources.purger', source_id=source.id) }}"
-            onsubmit="return confirm('Purger les fichiers expirés de cette source ?');">
+            data-confirm="Purger les fichiers expirés de cette source ?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-warning btn-sm">
           <i class="bi bi-trash"></i> Purger
@@ -82,7 +82,7 @@
         </li>
         <li class="list-group-item d-flex justify-content-between">
           <span class="text-muted">Adresse</span>
-          <span>{{ source.adresse or '—' }}{% if source.port %}:{{ source.port }}{% endif %}</span>
+          <span>{{ source.adresse or '-' }}{% if source.port %}:{{ source.port }}{% endif %}</span>
         </li>
         <li class="list-group-item d-flex justify-content-between">
           <span class="text-muted">Chemin</span>
@@ -138,7 +138,7 @@
               <td class="small fw-medium">{{ doc.nom_fichier }}</td>
               <td class="small text-muted">{{ doc.taille_octets|format_taille }}</td>
               <td class="small text-muted">
-                {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '—' }}
+                {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '-' }}
               </td>
               <td class="text-center">
                 {% if doc.statut.value == 'ok' %}
@@ -201,7 +201,7 @@
         {% for j in journaux %}
         <tr>
           <td class="small text-muted text-nowrap">
-            {{ j.created_at.strftime('%d/%m/%Y %H:%M') if j.created_at else '—' }}
+            {{ j.created_at.strftime('%d/%m/%Y %H:%M') if j.created_at else '-' }}
           </td>
           <td>
             {% if j.type_evenement.value == 'erreur' %}

@@ -1,7 +1,7 @@
 """
 Service de notifications pour les alertes.
 
-Phase 2 — CDC §8.2 : Notifications par email.
+Phase 2 - CDC §8.2 : Notifications par email.
 """
 import logging
 from typing import List
@@ -41,7 +41,7 @@ def notifier_documents_critiques(source: Source, documents: List[Document]) -> i
         logger.debug("Pas de destinataires pour les notifications critiques")
         return 0
 
-    sujet = f"[ALERTE] {len(documents)} document(s) critique(s) — {source.nom}"
+    sujet = f"[ALERTE] {len(documents)} document(s) critique(s) - {source.nom}"
 
     docs_list = "\n".join(
         f"<li>{doc.nom_fichier}</li>" for doc in documents[:20]
@@ -58,7 +58,7 @@ def notifier_documents_critiques(source: Source, documents: List[Document]) -> i
         <ul>{docs_list}</ul>
         <p>Ces documents n'ont pas été mis à jour depuis plus de {source.seuil_critique_jours} jours.</p>
         <hr>
-        <p><em>Application Modes Dégradés — CLCC</em></p>
+        <p><em>Application Modes Dégradés - CLCC</em></p>
     </body>
     </html>
     """
@@ -93,7 +93,7 @@ def notifier_erreur_connexion(source: Source) -> int:
         logger.debug("Pas de destinataires pour les notifications d'erreurs")
         return 0
 
-    sujet = f"[ERREUR] Échec de connexion répété — {source.nom}"
+    sujet = f"[ERREUR] Échec de connexion répété - {source.nom}"
 
     corps_html = f"""
     <html>
@@ -108,7 +108,7 @@ def notifier_erreur_connexion(source: Source) -> int:
         </ul>
         <p>Veuillez vérifier la configuration et la connectivité.</p>
         <hr>
-        <p><em>Application Modes Dégradés — CLCC</em></p>
+        <p><em>Application Modes Dégradés - CLCC</em></p>
     </body>
     </html>
     """

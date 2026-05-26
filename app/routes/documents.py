@@ -125,7 +125,7 @@ def index():
 @login_required
 @require_permission("documents.view")
 def voir(doc_id):
-    doc = db.get_or_404(Document, doc_id)
+    doc = _document_actif_or_404(doc_id)
     _verifier_chemin(doc.chemin_local)
     entree = Journal(
         source_id=doc.source_id,
@@ -142,7 +142,7 @@ def voir(doc_id):
 @login_required
 @require_permission("documents.download")
 def telecharger(doc_id):
-    doc = db.get_or_404(Document, doc_id)
+    doc = _document_actif_or_404(doc_id)
     chemin = _verifier_chemin(doc.chemin_local)
     entree = Journal(
         source_id=doc.source_id,
@@ -165,7 +165,7 @@ def telecharger(doc_id):
 @require_permission("documents.view")
 def pdf_inline(doc_id):
     """Sert le PDF en ligne pour l'affichage dans l'iframe du viewer."""
-    doc = db.get_or_404(Document, doc_id)
+    doc = _document_actif_or_404(doc_id)
     chemin = _verifier_chemin(doc.chemin_local)
     return send_file(
         chemin,
@@ -237,6 +237,13 @@ def telecharger_zip():
         download_name="modes_degrades.zip",
         mimetype="application/zip",
     )
+
+
+def _document_actif_or_404(doc_id: int) -> Document:
+    doc = db.session.get(Document, doc_id)
+    if not doc or doc.statut == StatutDocument.PURGE:
+        abort(404)
+    return doc
 
 
 def _verifier_chemin(chemin_local: str) -> str:

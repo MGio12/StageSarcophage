@@ -1,7 +1,7 @@
 """
 Modèle pour les tokens d'authentification API.
 
-Phase 2 — CDC §8.2 : API REST pour intégration.
+Phase 2 - CDC §8.2 : API REST pour intégration.
 """
 import secrets
 from datetime import datetime, timezone

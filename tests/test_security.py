@@ -1,7 +1,20 @@
 """Tests de sécurité : sanitization des noms de fichiers, path traversal."""
 import os
+import inspect
+import re
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
+from cryptography.fernet import Fernet
+
+from app import create_app
+from app.routes import api as api_routes
 from app.services.sync_service import _safe_filename, _verifier_chemin_storage
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TEMPLATES_DIR = PROJECT_ROOT / "app" / "templates"
 
 
 class TestSafeFilename:
@@ -53,3 +66,56 @@ class TestVerifierCheminStorage:
         os.makedirs(storage)
         with pytest.raises(ValueError, match="path traversal"):
             _verifier_chemin_storage("/etc/passwd", storage)
+
+
+def test_api_docs_utilise_template_dedie_pas_render_template_string():
+    source = inspect.getsource(api_routes)
+
+    assert "render_template_string" not in source
+
+
+def test_templates_evitent_sinks_dom_xss_et_handlers_inline():
+    patterns = ("innerHTML", "insertAdjacentHTML", "outerHTML", "document.write")
+    violations = []
+
+    for path in TEMPLATES_DIR.rglob("*.html"):
+        contenu = path.read_text(encoding="utf-8")
+        rel_path = path.relative_to(PROJECT_ROOT)
+        for pattern in patterns:
+            if pattern in contenu:
+                violations.append(f"{rel_path}: {pattern}")
+        for match in re.finditer(r"\son[a-z]+\s*=", contenu):
+            violations.append(f"{rel_path}: inline handler {match.group().strip()}")
+
+    assert violations == []
+
+
+def test_entetes_securite_production_utilisent_csp_nonce(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key")
+    monkeypatch.setenv("ENCRYPTION_KEY", Fernet.generate_key().decode())
+    monkeypatch.delenv("FORCE_HTTPS", raising=False)
+    monkeypatch.delenv("SESSION_COOKIE_SECURE", raising=False)
+
+    with patch("app.scheduler.tasks.demarrer_scheduler"):
+        production_app = create_app("production")
+
+    response = production_app.test_client().get(
+        "/api/v1/health",
+        base_url="https://example.test",
+    )
+    csp = response.headers["Content-Security-Policy"]
+    script_src = next(
+        directive for directive in csp.split("; ") if directive.startswith("script-src ")
+    )
+
+    assert response.status_code == 200
+    assert production_app.config["SESSION_COOKIE_SECURE"] is True
+    assert production_app.config["SESSION_COOKIE_HTTPONLY"] is True
+    assert production_app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+    assert "'unsafe-inline'" not in script_src
+    assert "https://cdn.jsdelivr.net" in script_src
+    assert re.search(r"'nonce-[^']+'", script_src)
+    assert "object-src 'none'" in csp
+    assert "base-uri 'self'" in csp
+    assert "form-action 'self'" in csp
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
