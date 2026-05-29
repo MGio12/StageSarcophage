@@ -1,25 +1,29 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation - Modes Degrades</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <style nonce="{{ csp_nonce() }}">
-        body { margin: 0; padding: 0; }
-        .swagger-ui .topbar { display: none; }
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script nonce="{{ csp_nonce() }}" src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script nonce="{{ csp_nonce() }}">
-        SwaggerUIBundle({
-            url: "/api/v1/openapi.json",
-            dom_id: "#swagger-ui",
-            presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-            layout: "BaseLayout"
-        });
-    </script>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Documentation API - Modes Dégradés{% endblock %}
+{% block head_extra %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Documentation API</h1>
+  <a href="{{ url_for('api.openapi_spec') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-code-slash" aria-hidden="true"></i> OpenAPI JSON
+  </a>
+</div>
+<div class="swagger-shell">
+  <div id="swagger-ui"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}" src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script nonce="{{ csp_nonce() }}">
+SwaggerUIBundle({
+  url: "/api/v1/openapi.json",
+  dom_id: "#swagger-ui",
+  presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+  layout: "BaseLayout"
+});
+</script>
+{% endblock %}

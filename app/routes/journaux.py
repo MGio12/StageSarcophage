@@ -10,6 +10,7 @@ from app.utils.decorators import require_permission
 from app.models.journal import Journal, TypeEvenement
 from app.models.source import Source
 from app.models.user import User
+from app.utils.sanitization import neutraliser_cellule_tableur
 
 journaux_bp = Blueprint("journaux", __name__, url_prefix="/journaux")
 
@@ -87,10 +88,10 @@ def export_csv():
     for j in journaux:
         writer.writerow([
             j.created_at.strftime("%Y-%m-%d %H:%M:%S") if j.created_at else "",
-            j.type_evenement.value,
-            source_map.get(j.source_id, "") if j.source_id else "",
-            user_map.get(j.user_id, "") if j.user_id else "",
-            j.message,
+            neutraliser_cellule_tableur(j.type_evenement.value),
+            neutraliser_cellule_tableur(source_map.get(j.source_id, "") if j.source_id else ""),
+            neutraliser_cellule_tableur(user_map.get(j.user_id, "") if j.user_id else ""),
+            neutraliser_cellule_tableur(j.message),
         ])
 
     return Response(

@@ -17,7 +17,10 @@ from app.models.api_token import APIToken
 from app.models.source import Source
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
+from app.models.background_job import BackgroundJob
+from app.services.job_service import permissions_pour_operation
 from app.utils.files import chemin_dans_storage
+from app.api.openapi import OPENAPI_SPEC
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 logger = logging.getLogger(__name__)
@@ -57,6 +60,13 @@ def require_api_permissions(*permissions):
             return f(*args, **kwargs)
         return decorated
     return decorator
+
+
+def _api_forbidden(missing: list[str]):
+    return jsonify({
+        "error": "Permission denied",
+        "missing_permissions": missing,
+    }), 403
 
 
 @api_bp.route("/health")
@@ -126,24 +136,26 @@ def source_sync(source_id):
         return jsonify({"error": "Source not found"}), 404
     if not source.actif:
         return jsonify({"error": "Source is not active"}), 400
-    try:
-        from app.services.sync_service import synchroniser_source
-        from app.services.purge_service import mettre_a_jour_statuts
-        resultat = synchroniser_source(source)
-        mettre_a_jour_statuts(source)
-        return jsonify({
-            "success": True,
-            "fichiers_copies": resultat.fichiers_copies,
-            "fichiers_ignores": resultat.fichiers_ignores,
-            "erreurs": resultat.erreurs
-        })
-    except Exception as exc:
-        logger.error(
-            "Erreur synchronisation API source %s (%s)",
-            source_id,
-            type(exc).__name__,
-        )
-        return jsonify({"error": "Synchronization failed"}), 500
+    from app.services.sync_orchestrator import synchroniser_source_job
+
+    job = synchroniser_source_job(source.id, user_id=request.api_user.id)
+    return jsonify({"job": job.to_dict()}), 202
+
+
+@api_bp.route("/jobs/<int:job_id>")
+@require_api_token
+def job_status(job_id):
+    job = db.session.get(BackgroundJob, job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+    missing = [
+        permission
+        for permission in permissions_pour_operation(job.operation)
+        if not request.api_user.has_permission(permission)
+    ]
+    if missing:
+        return _api_forbidden(missing)
+    return jsonify({"job": job.to_dict()})
 
 
 @api_bp.route("/sources/<int:source_id>/status")
@@ -282,156 +294,6 @@ def _document_to_dict(doc, detail=False):
             "created_at": doc.created_at.isoformat() if doc.created_at else None
         })
     return d
-
-
-OPENAPI_SPEC = {
-    "openapi": "3.0.3",
-    "info": {
-        "title": "Modes Degrades API",
-        "description": "API REST pour l'integration avec les outils internes. Permet de gerer les sources, documents et acceder aux statistiques.",
-        "version": "1.0.0",
-        "contact": {"name": "CLCC", "email": "support@clcc.local"}
-    },
-    "servers": [{"url": "/api/v1", "description": "API v1"}],
-    "security": [{"bearerAuth": []}],
-    "components": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "description": "Token API genere depuis l'interface d'administration"
-            }
-        },
-        "schemas": {
-            "Source": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "nom": {"type": "string"},
-                    "protocole": {"type": "string", "enum": ["sftp", "smb"]},
-                    "actif": {"type": "boolean"},
-                    "frequence_sync_minutes": {"type": "integer"}
-                }
-            },
-            "Document": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "nom_fichier": {"type": "string"},
-                    "source_id": {"type": "integer"},
-                    "statut": {"type": "string", "enum": ["ok", "avertissement", "critique", "purge"]},
-                    "taille_octets": {"type": "integer"}
-                }
-            },
-            "Error": {
-                "type": "object",
-                "properties": {"error": {"type": "string"}}
-            }
-        }
-    },
-    "paths": {
-        "/health": {
-            "get": {
-                "summary": "Etat de sante de l'API",
-                "tags": ["Monitoring"],
-                "security": [],
-                "responses": {
-                    "200": {
-                        "description": "API fonctionnelle",
-                        "content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string"}, "timestamp": {"type": "string"}}}}}
-                    }
-                }
-            }
-        },
-        "/stats": {
-            "get": {
-                "summary": "Statistiques globales",
-                "tags": ["Monitoring"],
-                "responses": {
-                    "200": {
-                        "description": "Statistiques",
-                        "content": {"application/json": {"schema": {"type": "object"}}}
-                    }
-                }
-            }
-        },
-        "/sources": {
-            "get": {
-                "summary": "Liste des sources",
-                "tags": ["Sources"],
-                "responses": {
-                    "200": {
-                        "description": "Liste des sources",
-                        "content": {"application/json": {"schema": {"type": "object", "properties": {"sources": {"type": "array", "items": {"$ref": "#/components/schemas/Source"}}}}}}
-                    }
-                }
-            }
-        },
-        "/sources/{id}": {
-            "get": {
-                "summary": "Detail d'une source",
-                "tags": ["Sources"],
-                "parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}],
-                "responses": {
-                    "200": {"description": "Source trouvee", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Source"}}}},
-                    "404": {"description": "Source non trouvee", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
-                }
-            }
-        },
-        "/sources/{id}/sync": {
-            "post": {
-                "summary": "Declencher la synchronisation d'une source",
-                "tags": ["Sources"],
-                "parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}],
-                "responses": {
-                    "200": {"description": "Synchronisation effectuee"},
-                    "400": {"description": "Source inactive"},
-                    "404": {"description": "Source non trouvee"}
-                }
-            }
-        },
-        "/sources/{id}/status": {
-            "get": {
-                "summary": "Etat d'une source",
-                "tags": ["Sources"],
-                "parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}],
-                "responses": {"200": {"description": "Etat de la source"}, "404": {"description": "Source non trouvee"}}
-            }
-        },
-        "/documents": {
-            "get": {
-                "summary": "Liste des documents (paginee)",
-                "tags": ["Documents"],
-                "parameters": [
-                    {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1}},
-                    {"name": "per_page", "in": "query", "schema": {"type": "integer", "default": 50, "maximum": 100}},
-                    {"name": "source_id", "in": "query", "schema": {"type": "integer"}},
-                    {"name": "statut", "in": "query", "schema": {"type": "string", "enum": ["ok", "avertissement", "critique"]}}
-                ],
-                "responses": {"200": {"description": "Liste paginee de documents"}}
-            }
-        },
-        "/documents/{id}": {
-            "get": {
-                "summary": "Detail d'un document",
-                "tags": ["Documents"],
-                "parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}],
-                "responses": {"200": {"description": "Document trouve"}, "404": {"description": "Document non trouve"}}
-            }
-        },
-        "/documents/{id}/download": {
-            "get": {
-                "summary": "Telecharger un document",
-                "tags": ["Documents"],
-                "parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}],
-                "responses": {
-                    "200": {"description": "Fichier PDF", "content": {"application/pdf": {}}},
-                    "404": {"description": "Document non trouve"}
-                }
-            }
-        }
-    }
-}
 
 
 @api_bp.route("/openapi.json")

@@ -11,6 +11,7 @@ from flask import (
     current_app,
 )
 from flask_login import login_required
+from flask_login import current_user
 
 from app.extensions import db, limiter
 from app.utils.decorators import require_permission
@@ -192,14 +193,21 @@ def synchroniser(source_id):
 
 def _synchroniser_source_maintenant(source: Source) -> None:
     try:
-        from app.services.sync_service import synchroniser_source
-        from app.services.purge_service import mettre_a_jour_statuts
-        resultat = synchroniser_source(source)
-        mettre_a_jour_statuts(source)
+        from app.services.sync_orchestrator import synchroniser_source_job
+
+        job = synchroniser_source_job(source.id, user_id=current_user.id)
+        if job.status == "succeeded" and job.result:
+            resultat = job.result
+            flash(
+                f"Synchronisation terminée : {resultat.get('fichiers_copies', 0)} copié(s), "
+                f"{resultat.get('fichiers_ignores', 0)} ignoré(s), "
+                f"{resultat.get('erreurs', 0)} erreur(s).",
+                "success" if resultat.get("erreurs", 0) == 0 else "warning",
+            )
+            return
         flash(
-            f"Synchronisation terminée : {resultat.fichiers_copies} copié(s), "
-            f"{resultat.fichiers_ignores} ignoré(s), {resultat.erreurs} erreur(s).",
-            "success" if resultat.erreurs == 0 else "warning",
+            f"Synchronisation lancée en arrière-plan (job #{job.id}).",
+            "info",
         )
     except Exception as exc:
         logger.error("Erreur synchronisation source %s (%s)", source.nom, type(exc).__name__)
@@ -213,12 +221,20 @@ def purger(source_id):
     """Déclenche manuellement la purge des fichiers expirés pour une source."""
     source = db.get_or_404(Source, source_id)
     try:
-        from app.services.purge_service import purger_source
-        resultat = purger_source(source)
+        from app.services.sync_orchestrator import purger_source_job
+
+        job = purger_source_job(source.id, user_id=current_user.id)
+        if job.status == "succeeded" and job.result:
+            resultat = job.result
+            flash(
+                f"Purge terminée : {resultat.get('fichiers_purges', 0)} fichier(s) purgé(s), "
+                f"{resultat.get('erreurs', 0)} erreur(s).",
+                "success" if resultat.get("erreurs", 0) == 0 else "warning",
+            )
+            return redirect(url_for("sources.detail", source_id=source_id))
         flash(
-            f"Purge terminée : {resultat.fichiers_purges} fichier(s) purgé(s), "
-            f"{resultat.erreurs} erreur(s).",
-            "success" if resultat.erreurs == 0 else "warning",
+            f"Purge lancée en arrière-plan (job #{job.id}).",
+            "info",
         )
     except Exception as exc:
         logger.error("Erreur purge source %s (%s)", source.nom, type(exc).__name__)
@@ -249,28 +265,17 @@ def accepter_fingerprint(source_id):
 @login_required
 @require_permission("sources.sync")
 def synchroniser_toutes():
-    sources = Source.query.filter(
-        Source.actif == True,
-        Source.deleted_at.is_(None)
-    ).all()
-    total_copies = 0
-    total_erreurs = 0
-    for source in sources:
-        try:
-            from app.services.sync_service import synchroniser_source
-            from app.services.purge_service import mettre_a_jour_statuts
-            resultat = synchroniser_source(source)
-            mettre_a_jour_statuts(source)
-            total_copies += resultat.fichiers_copies
-            total_erreurs += resultat.erreurs
-        except Exception as exc:
-            logger.error("Erreur sync source %s (%s)", source.nom, type(exc).__name__)
-            total_erreurs += 1
-    flash(
-        f"Synchronisation globale : {total_copies} fichier(s) copié(s), "
-        f"{total_erreurs} erreur(s).",
-        "success" if total_erreurs == 0 else "warning",
-    )
+    from app.services.sync_orchestrator import synchroniser_toutes_sources_job
+
+    job = synchroniser_toutes_sources_job(user_id=current_user.id)
+    if job.status == "succeeded" and job.result:
+        flash(
+            f"Synchronisation globale : {job.result.get('fichiers_copies', 0)} fichier(s) copié(s), "
+            f"{job.result.get('erreurs', 0)} erreur(s).",
+            "success" if job.result.get("erreurs", 0) == 0 else "warning",
+        )
+    else:
+        flash(f"Synchronisation globale lancée en arrière-plan (job #{job.id}).", "info")
     return redirect(url_for("main.dashboard"))
 
 
@@ -335,14 +340,7 @@ def _tester_connexion_source(source: Source) -> dict:
     elif source.protocole == "smb":
         from app.services.smb_service import tester_connexion
     elif source.protocole == "local":
-        from app.services.sync_service import _lister_local
-
-        fichiers = _lister_local(source)
-        return {
-            "succes": True,
-            "message": f"Connexion locale réussie - {len(fichiers)} fichier(s) trouvé(s)",
-            "nb_fichiers": len(fichiers),
-        }
+        from app.services.local_service import tester_connexion
     else:
         return {
             "succes": False,
@@ -378,6 +376,9 @@ def _source_depuis_formulaire(source: Source | None) -> Source | None:
     source.description = request.form.get("description", "").strip() or None
     source.type_serveur = request.form.get("type_serveur", "linux")
     source.protocole = request.form.get("protocole", "sftp")
+    if source.protocole == "local" and not current_user.has_permission("sources.local"):
+        flash("La configuration de sources locales requiert la permission sources.local.", "danger")
+        return None
     source.adresse = request.form.get("adresse", "").strip() or None
     port_val = request.form.get("port", "").strip()
     source.port = int(port_val) if port_val.isdigit() else None

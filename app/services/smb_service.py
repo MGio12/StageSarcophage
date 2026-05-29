@@ -11,31 +11,16 @@ import fnmatch
 import logging
 import ntpath
 import shutil
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 import smbclient
 from smbprotocol.exceptions import SMBException
 
+from app.services.connectors.base import FichierDistant, ResultatConnexion
+
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SECONDES = 10
-
-
-@dataclass
-class FichierDistant:
-    nom: str
-    chemin: str
-    taille: int
-    date_modification: datetime
-
-
-@dataclass
-class ResultatConnexion:
-    succes: bool
-    message: str
-    nb_fichiers: int = 0
-    fichiers: list[FichierDistant] = field(default_factory=list)
 
 
 def _nom_fichier_distant_sur(nom: str) -> bool:
@@ -69,6 +54,7 @@ def lister_fichiers(source) -> list[FichierDistant]:
             username=source.login,
             password=source.mot_de_passe,
             port=port,
+            connection_timeout=TIMEOUT_SECONDES,
         )
         for entry in smbclient.scandir(chemin_unc):
             if not entry.is_file():
@@ -111,6 +97,7 @@ def telecharger_fichier(source, fichier_distant: FichierDistant, chemin_local: s
             username=source.login,
             password=source.mot_de_passe,
             port=port,
+            connection_timeout=TIMEOUT_SECONDES,
         )
         with smbclient.open_file(fichier_distant.chemin, mode="rb") as f_src:
             with open(chemin_local, "wb") as f_dst:

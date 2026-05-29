@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="mb-4">
-  <h2><i class="bi bi-diagram-3"></i> Configuration LDAP / Active Directory</h2>
+  <h1 class="h3"><i class="bi bi-diagram-3" aria-hidden="true"></i> Configuration LDAP / Active Directory</h1>
 </div>
 
 <div class="row">
@@ -14,18 +14,18 @@
       </div>
       <div class="card-body">
         {% if ldap_enabled %}
-          <p class="text-success"><i class="bi bi-check-circle"></i> LDAP active</p>
+          <p class="text-success"><i class="bi bi-check-circle" aria-hidden="true"></i> LDAP active</p>
 
           <form method="post" action="{{ url_for('admin.ldap_test') }}" class="mb-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-primary">
-              <i class="bi bi-plug"></i> Tester la connexion
+              <i class="bi bi-plug" aria-hidden="true"></i> Tester la connexion
             </button>
           </form>
 
         {% else %}
           <div class="alert alert-warning mb-3">
-            <i class="bi bi-exclamation-triangle"></i>
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
             LDAP desactive. Configurez les variables d'environnement :
           </div>
           <ul class="small text-muted">
@@ -47,7 +47,7 @@
       </div>
       <div class="card-body">
         {% if ldap_enabled and ldap_sync_groups %}
-          <p class="text-success"><i class="bi bi-check-circle"></i> Synchronisation des groupes active</p>
+          <p class="text-success"><i class="bi bi-check-circle" aria-hidden="true"></i> Synchronisation des groupes active</p>
 
           <p class="small text-muted">
             La synchronisation mappe les groupes AD vers les roles applicatifs selon la configuration LDAP_GROUP_MAPPING.
@@ -56,13 +56,13 @@
           <form method="post" action="{{ url_for('admin.ldap_sync_groupes') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary">
-              <i class="bi bi-arrow-repeat"></i> Synchroniser maintenant
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Synchroniser maintenant
             </button>
           </form>
 
         {% elif ldap_enabled %}
           <div class="alert alert-info mb-3">
-            <i class="bi bi-info-circle"></i>
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
             Synchronisation des groupes desactivee.
           </div>
           <p class="small text-muted">Pour activer :</p>
@@ -87,9 +87,9 @@
     <table class="table table-sm">
       <thead>
         <tr>
-          <th>Variable</th>
-          <th>Description</th>
-          <th>Exemple</th>
+          <th scope="col">Variable</th>
+          <th scope="col">Description</th>
+          <th scope="col">Exemple</th>
         </tr>
       </thead>
       <tbody>

@@ -1,0 +1,66 @@
+{% macro status_badge(status, kind='document') -%}
+  {% set value = status.value if status.value is defined else status %}
+  {% if value == 'ok' %}
+    <span class="badge badge-ok">OK</span>
+  {% elif value == 'avertissement' %}
+    <span class="badge badge-avertissement">Avert.</span>
+  {% elif value == 'critique' %}
+    <span class="badge badge-critique">Critique</span>
+  {% elif value == 'purge' and kind == 'document' %}
+    <span class="badge badge-purge">Purgé</span>
+  {% elif value == 'sync' %}
+    <span class="badge text-bg-primary">Sync</span>
+  {% elif value == 'erreur' %}
+    <span class="badge text-bg-danger">Erreur</span>
+  {% elif value == 'purge' %}
+    <span class="badge text-bg-warning text-dark">Purge</span>
+  {% elif value == 'acces' %}
+    <span class="badge text-bg-secondary">Accès</span>
+  {% elif value == 'connexion' %}
+    <span class="badge text-bg-info text-dark">Connexion</span>
+  {% else %}
+    <span class="badge text-bg-light text-dark border">{{ value }}</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro icon_button(href, icon, label, variant='outline-secondary', size='sm', extra_class='') -%}
+  <a href="{{ href }}" class="btn btn-{{ size }} btn-{{ variant }} {{ extra_class }}" aria-label="{{ label }}" title="{{ label }}">
+    <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
+    <span class="visually-hidden">{{ label }}</span>
+  </a>
+{%- endmacro %}
+
+{% macro empty_state(icon, title, text='', action_href='', action_label='') -%}
+  <div class="empty-state">
+    <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
+    <div class="empty-state-title">{{ title }}</div>
+    {% if text %}<div class="empty-state-text">{{ text }}</div>{% endif %}
+    {% if action_href and action_label %}
+      <a href="{{ action_href }}" class="btn btn-primary btn-sm mt-3">{{ action_label }}</a>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro pagination_nav(pagination, endpoint, args={}, aria_label='Pagination') -%}
+  {% if pagination.pages > 1 %}
+  <nav aria-label="{{ aria_label }}">
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" aria-label="Page précédente" href="{{ url_for(endpoint, page=pagination.prev_num if pagination.has_prev else pagination.page, **args) }}">Précédent</a>
+      </li>
+      {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+        {% if p %}
+          <li class="page-item {% if p == pagination.page %}active{% endif %}">
+            <a class="page-link" {% if p == pagination.page %}aria-current="page"{% endif %} href="{{ url_for(endpoint, page=p, **args) }}">{{ p }}</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link" aria-hidden="true">...</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" aria-label="Page suivante" href="{{ url_for(endpoint, page=pagination.next_num if pagination.has_next else pagination.page, **args) }}">Suivant</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+{%- endmacro %}

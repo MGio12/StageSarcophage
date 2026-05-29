@@ -5,7 +5,6 @@ Section 2.2 du CDC : collecte périodique, déduplication SHA-256, journalisatio
 """
 from __future__ import annotations
 
-import fnmatch
 import hashlib
 import logging
 import os
@@ -14,13 +13,13 @@ import shutil
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 
 from flask import current_app
 
 from app.extensions import db
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
+from app.utils.files import chemin_dans_storage, nom_fichier_sur
 
 logger = logging.getLogger(__name__)
 
@@ -41,24 +40,15 @@ def _slugify(texte: str) -> str:
 
 def _safe_filename(nom: str) -> str:
     """Nettoie un nom de fichier pour éviter les attaques path traversal."""
-    # Supprime les caractères nuls
-    nom = nom.replace("\x00", "")
-    # Normalise les séparateurs Windows en /
-    nom = nom.replace("\\", "/")
-    # Extrait uniquement le nom de fichier (supprime tout chemin)
-    nom = os.path.basename(nom)
-    # Refuse les fichiers cachés ou vides
-    if not nom or nom.startswith("."):
-        raise ValueError(f"Nom de fichier invalide : {nom!r}")
-    return nom
+    return nom_fichier_sur(nom)
 
 
 def _verifier_chemin_storage(chemin: str, storage_dir: str) -> None:
     """Vérifie que le chemin est bien dans le répertoire de stockage."""
-    chemin_reel = os.path.realpath(chemin)
-    storage_reel = os.path.realpath(storage_dir)
-    if not chemin_reel.startswith(storage_reel + os.sep):
-        raise ValueError(f"Tentative de path traversal détectée : {chemin!r}")
+    try:
+        chemin_dans_storage(chemin, storage_dir)
+    except ValueError as exc:
+        raise ValueError(f"Tentative de path traversal détectée : {chemin!r}") from exc
 
 
 def _dossier_local_source(source) -> str:
@@ -89,28 +79,9 @@ def _get_connector(protocole: str):
         from app.services import smb_service
         return smb_service.lister_fichiers, smb_service.telecharger_fichier
     if protocole == "local":
-        return _lister_local, _telecharger_local
+        from app.services import local_service
+        return local_service.lister_fichiers, local_service.telecharger_fichier
     raise ValueError(f"Protocole non supporté : {protocole!r}")
-
-
-def _lister_local(source):
-    from app.services.sftp_service import FichierDistant
-    filtre = source.filtre_fichiers or "*.pdf"
-    fichiers = []
-    for path in Path(source.chemin_distant).iterdir():
-        if path.is_file() and fnmatch.fnmatch(path.name, filtre):
-            stat = path.stat()
-            fichiers.append(FichierDistant(
-                nom=path.name,
-                chemin=str(path),
-                taille=stat.st_size,
-                date_modification=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
-            ))
-    return fichiers
-
-
-def _telecharger_local(source, fichier_distant, chemin_local: str) -> None:
-    shutil.copy2(fichier_distant.chemin, chemin_local)
 
 
 def synchroniser_source(source) -> ResultatSync:

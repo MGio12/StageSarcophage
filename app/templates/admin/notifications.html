@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h2><i class="bi bi-bell"></i> Notifications par email</h2>
+  <h1 class="h3"><i class="bi bi-bell" aria-hidden="true"></i> Notifications par email</h1>
   <a href="{{ url_for('admin.notification_nouvelle') }}" class="btn btn-primary">
-    <i class="bi bi-plus-lg"></i> Nouveau destinataire
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Nouveau destinataire
   </a>
 </div>
 
@@ -23,7 +23,7 @@
       </div>
       <div class="col-auto">
         <button type="submit" class="btn btn-outline-primary">
-          <i class="bi bi-envelope"></i> Envoyer un email test
+          <i class="bi bi-envelope" aria-hidden="true"></i> Envoyer un email test
         </button>
       </div>
     </form>
@@ -31,22 +31,22 @@
 </div>
 
 <div class="card shadow-sm">
-  <div class="card-body p-0">
+  <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>Email</th>
-          <th>Utilisateur</th>
-          <th>Erreurs connexion</th>
-          <th>Docs critiques</th>
-          <th>Statut</th>
-          <th class="text-end">Actions</th>
+          <th scope="col">Email</th>
+          <th scope="col">Utilisateur</th>
+          <th scope="col">Erreurs connexion</th>
+          <th scope="col">Docs critiques</th>
+          <th scope="col">Statut</th>
+          <th scope="col" class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for config in configs %}
         <tr class="{% if not config.actif %}table-secondary{% endif %}">
-          <td><i class="bi bi-envelope"></i> {{ config.email }}</td>
+          <td><i class="bi bi-envelope" aria-hidden="true"></i> {{ config.email }}</td>
           <td>
             {% if config.user %}
               {{ config.user.username }}
@@ -77,14 +77,14 @@
           </td>
           <td class="text-end">
             <a href="{{ url_for('admin.notification_modifier', config_id=config.id) }}"
-               class="btn btn-sm btn-outline-primary" title="Modifier">
-              <i class="bi bi-pencil"></i>
+               class="btn btn-sm btn-outline-primary" title="Modifier" aria-label="Modifier {{ config.email }}">
+              <i class="bi bi-pencil" aria-hidden="true"></i>
             </a>
             <form action="{{ url_for('admin.notification_supprimer', config_id=config.id) }}"
                   method="post" class="d-inline" data-confirm="Supprimer ce destinataire ?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
-                <i class="bi bi-trash"></i>
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer {{ config.email }}">
+                <i class="bi bi-trash" aria-hidden="true"></i>
               </button>
             </form>
           </td>
@@ -102,7 +102,7 @@
 </div>
 
 <div class="alert alert-info mt-4">
-  <i class="bi bi-info-circle"></i>
+  <i class="bi bi-info-circle" aria-hidden="true"></i>
   <strong>Configuration requise :</strong>
   Definissez les variables d'environnement SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD et SMTP_FROM.
 </div>

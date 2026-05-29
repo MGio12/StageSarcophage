@@ -124,6 +124,16 @@ Tests automatisés:
 .venv/bin/python -m pytest -q
 ```
 
+Gate qualité complet:
+
+```bash
+make check
+```
+
+Cette commande exécute les tests avec couverture, un lint Python ciblé sur les
+erreurs critiques, Bandit, `pip-audit` et un scan de secrets limité aux fichiers
+suivis par Git.
+
 ## Tester l'application
 
 Depuis l'interface web:
@@ -167,6 +177,21 @@ http://127.0.0.1:5000/api/v1/docs
 - Rapports PDF et Excel.
 - API REST avec tokens.
 - Documentation Swagger.
+
+## Documentation projet
+
+Point d'entrée recommandé:
+
+- [Index documentation](docs/README.md)
+
+Accès direct:
+
+- [Architecture](docs/ARCHITECTURE.md): couches applicatives et invariants.
+- [Modèle de données](docs/DATA_MODEL.md): responsabilités des entités.
+- [Exploitation](docs/OPERATIONS.md): commandes de lancement, sauvegarde et dépannage.
+- [Sécurité](docs/SECURITY.md): secrets, CSP, permissions, audits et rotation Fernet.
+- [Tests et qualité](docs/TESTING.md): commandes de vérification.
+- [Statut d'implémentation](docs/IMPLEMENTATION_STATUS.md): état de la vague qualité.
 
 ## Docker
 

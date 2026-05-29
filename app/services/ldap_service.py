@@ -25,6 +25,7 @@ class LDAPConfig:
     bind_password: str
     user_filter: str
     default_role: str
+    timeout_seconds: int = 10
 
 
 @dataclass
@@ -51,7 +52,8 @@ def get_ldap_config() -> Optional[LDAPConfig]:
         bind_dn=current_app.config.get("LDAP_BIND_DN", ""),
         bind_password=current_app.config.get("LDAP_BIND_PASSWORD", ""),
         user_filter=current_app.config.get("LDAP_USER_FILTER", "(sAMAccountName={username})"),
-        default_role=current_app.config.get("LDAP_DEFAULT_ROLE", "lecteur")
+        default_role=current_app.config.get("LDAP_DEFAULT_ROLE", "lecteur"),
+        timeout_seconds=current_app.config.get("LDAP_TIMEOUT_SECONDS", 10),
     )
 
 
@@ -82,7 +84,8 @@ def authentifier_ldap(username: str, password: str) -> bool:
             config.host,
             port=config.port,
             use_ssl=config.use_ssl,
-            get_info=ALL
+            get_info=ALL,
+            connect_timeout=config.timeout_seconds,
         )
 
         user_dn = _trouver_dn_utilisateur(server, config, username)
@@ -129,7 +132,8 @@ def recuperer_infos_utilisateur(username: str) -> Optional[LDAPUserInfo]:
             config.host,
             port=config.port,
             use_ssl=config.use_ssl,
-            get_info=ALL
+            get_info=ALL,
+            connect_timeout=config.timeout_seconds,
         )
 
         conn = Connection(server, user=config.bind_dn, password=config.bind_password)
@@ -210,7 +214,7 @@ def tester_connexion_ldap() -> tuple[bool, str]:
             port=config.port,
             use_ssl=config.use_ssl,
             get_info=ALL,
-            connect_timeout=10
+            connect_timeout=config.timeout_seconds,
         )
 
         conn = Connection(server, user=config.bind_dn, password=config.bind_password)

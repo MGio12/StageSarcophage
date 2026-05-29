@@ -14,14 +14,14 @@ from app.models.user import User
 from app.models.api_token import APIToken
 from app.models.notification_config import NotificationConfig
 from app.models.setting import Setting, SETTINGS_DEFAUT
-from app.utils.decorators import admin_required, require_permission
+from app.utils.decorators import require_permission
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
 @admin_bp.route("/utilisateurs")
 @login_required
-@admin_required
+@require_permission("admin.users")
 def utilisateurs():
     users = User.query.order_by(User.username).all()
     return render_template("admin/utilisateurs.html", users=users)
@@ -29,7 +29,7 @@ def utilisateurs():
 
 @admin_bp.route("/utilisateurs/nouveau", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.users")
 def utilisateur_nouveau():
     roles = Role.query.order_by(Role.nom).all()
     if request.method == "POST":
@@ -65,7 +65,7 @@ def utilisateur_nouveau():
 
 @admin_bp.route("/utilisateurs/<int:user_id>/modifier", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.users")
 def utilisateur_modifier(user_id):
     user = db.get_or_404(User, user_id)
     roles = Role.query.order_by(Role.nom).all()
@@ -102,7 +102,7 @@ def utilisateur_modifier(user_id):
 
 @admin_bp.route("/utilisateurs/<int:user_id>/activer", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.users")
 def utilisateur_activer(user_id):
     user = db.get_or_404(User, user_id)
     user.is_active = True
@@ -113,7 +113,7 @@ def utilisateur_activer(user_id):
 
 @admin_bp.route("/utilisateurs/<int:user_id>/desactiver", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.users")
 def utilisateur_desactiver(user_id):
     user = db.get_or_404(User, user_id)
     user.is_active = False
@@ -124,7 +124,7 @@ def utilisateur_desactiver(user_id):
 
 @admin_bp.route("/tokens")
 @login_required
-@admin_required
+@require_permission("admin.tokens")
 def tokens():
     tokens_list = APIToken.query.order_by(APIToken.created_at.desc()).all()
     now = datetime.now(timezone.utc)
@@ -133,7 +133,7 @@ def tokens():
 
 @admin_bp.route("/tokens/nouveau", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.tokens")
 def token_nouveau():
     users = User.query.filter_by(is_active=True).order_by(User.username).all()
     if request.method == "POST":
@@ -168,7 +168,7 @@ def token_nouveau():
 
 @admin_bp.route("/tokens/<int:token_id>/revoquer", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.tokens")
 def token_revoquer(token_id):
     api_token = db.get_or_404(APIToken, token_id)
     api_token.is_active = False
@@ -179,7 +179,7 @@ def token_revoquer(token_id):
 
 @admin_bp.route("/notifications")
 @login_required
-@admin_required
+@require_permission("admin.notifications")
 def notifications():
     configs = NotificationConfig.query.order_by(NotificationConfig.email).all()
     return render_template("admin/notifications.html", configs=configs)
@@ -187,7 +187,7 @@ def notifications():
 
 @admin_bp.route("/notifications/nouveau", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.notifications")
 def notification_nouvelle():
     users = User.query.filter_by(is_active=True).order_by(User.username).all()
     if request.method == "POST":
@@ -220,7 +220,7 @@ def notification_nouvelle():
 
 @admin_bp.route("/notifications/<int:config_id>/modifier", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.notifications")
 def notification_modifier(config_id):
     config = db.get_or_404(NotificationConfig, config_id)
     users = User.query.filter_by(is_active=True).order_by(User.username).all()
@@ -252,7 +252,7 @@ def notification_modifier(config_id):
 
 @admin_bp.route("/notifications/<int:config_id>/supprimer", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.notifications")
 def notification_supprimer(config_id):
     config = db.get_or_404(NotificationConfig, config_id)
     email = config.email
@@ -264,7 +264,7 @@ def notification_supprimer(config_id):
 
 @admin_bp.route("/notifications/test", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.notifications")
 def notification_test():
     email = request.form.get("email", "").strip()
     if not email:
@@ -281,7 +281,7 @@ def notification_test():
 
 @admin_bp.route("/roles")
 @login_required
-@admin_required
+@require_permission("admin.roles")
 def roles():
     roles_list = Role.query.order_by(Role.nom).all()
     return render_template("admin/roles.html", roles=roles_list)
@@ -289,7 +289,7 @@ def roles():
 
 @admin_bp.route("/roles/nouveau", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.roles")
 def role_nouveau():
     if request.method == "POST":
         nom = request.form.get("nom", "").strip().lower()
@@ -319,7 +319,7 @@ def role_nouveau():
 
 @admin_bp.route("/roles/<int:role_id>/modifier", methods=["GET", "POST"])
 @login_required
-@admin_required
+@require_permission("admin.roles")
 def role_modifier(role_id):
     role = db.get_or_404(Role, role_id)
 
@@ -346,7 +346,7 @@ def role_modifier(role_id):
 
 @admin_bp.route("/roles/<int:role_id>/supprimer", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.roles")
 def role_supprimer(role_id):
     role = db.get_or_404(Role, role_id)
 
@@ -367,7 +367,7 @@ def role_supprimer(role_id):
 
 @admin_bp.route("/parametres")
 @login_required
-@admin_required
+@require_permission("admin.settings")
 def parametres():
     settings_list = Setting.query.order_by(Setting.cle).all()
     return render_template("admin/parametres.html", settings=settings_list, defaults=SETTINGS_DEFAUT)
@@ -375,7 +375,7 @@ def parametres():
 
 @admin_bp.route("/parametres/modifier", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.settings")
 def parametres_modifier():
     for cle in SETTINGS_DEFAUT:
         valeur = request.form.get(cle, "").strip()
@@ -392,7 +392,7 @@ def parametres_modifier():
 
 @admin_bp.route("/ldap")
 @login_required
-@admin_required
+@require_permission("admin.settings")
 def ldap():
     ldap_enabled = current_app.config.get("LDAP_ENABLED", False)
     ldap_sync_groups = current_app.config.get("LDAP_SYNC_GROUPS", False)
@@ -401,7 +401,7 @@ def ldap():
 
 @admin_bp.route("/ldap/test", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.settings")
 def ldap_test():
     from app.services.ldap_service import tester_connexion_ldap
     success, message = tester_connexion_ldap()
@@ -414,7 +414,7 @@ def ldap_test():
 
 @admin_bp.route("/ldap/sync-groupes", methods=["POST"])
 @login_required
-@admin_required
+@require_permission("admin.settings")
 def ldap_sync_groupes():
     from app.services.ldap_service import synchroniser_groupes_utilisateurs
 

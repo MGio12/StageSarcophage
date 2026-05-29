@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}{{ source.nom }} - Sources{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h3 mb-0">
-    <i class="bi bi-hdd-network"></i> {{ source.nom }}
+    <i class="bi bi-hdd-network" aria-hidden="true"></i> {{ source.nom }}
     {% if not source.actif %}
       <span class="badge bg-secondary ms-2">inactif</span>
     {% endif %}
@@ -15,19 +16,19 @@
           action="{{ url_for('sources.restaurer', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-success btn-sm">
-        <i class="bi bi-arrow-counterclockwise"></i> Restaurer
+        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurer
       </button>
     </form>
     {% endif %}
     <a href="{{ url_for('sources.modifier', source_id=source.id) }}"
        class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-pencil"></i> Modifier
+      <i class="bi bi-pencil" aria-hidden="true"></i> Modifier
     </a>
     <form method="post"
           action="{{ url_for('sources.tester', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-outline-info btn-sm">
-        <i class="bi bi-plug"></i> Tester
+        <i class="bi bi-plug" aria-hidden="true"></i> Tester
       </button>
     </form>
     {% if source.protocole == 'sftp' %}
@@ -35,7 +36,7 @@
           action="{{ url_for('sources.accepter_fingerprint', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-fingerprint"></i> Accepter fingerprint
+        <i class="bi bi-fingerprint" aria-hidden="true"></i> Accepter fingerprint
       </button>
     </form>
     {% endif %}
@@ -44,7 +45,7 @@
           action="{{ url_for('sources.synchroniser', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-repeat"></i> Synchroniser
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Synchroniser
       </button>
     </form>
     {% endif %}
@@ -54,12 +55,12 @@
             data-confirm="Purger les fichiers expirés de cette source ?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-warning btn-sm">
-          <i class="bi bi-trash"></i> Purger
+          <i class="bi bi-trash" aria-hidden="true"></i> Purger
         </button>
       </form>
     {% endif %}
     <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left"></i> Retour
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Retour
     </a>
   </div>
 </div>
@@ -69,7 +70,7 @@
   <div class="col-lg-4">
     <div class="card shadow-sm h-100">
       <div class="card-header fw-semibold">
-        <i class="bi bi-info-circle"></i> Paramètres
+        <i class="bi bi-info-circle" aria-hidden="true"></i> Paramètres
       </div>
       <ul class="list-group list-group-flush small">
         <li class="list-group-item d-flex justify-content-between">
@@ -116,7 +117,7 @@
   <div class="col-lg-8">
     <div class="card shadow-sm">
       <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-        <span><i class="bi bi-file-earmark-pdf"></i> Documents ({{ docs|length }})</span>
+        <span><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Documents ({{ docs|length }})</span>
         <a href="{{ url_for('documents.index', source_id=source.id) }}"
            class="btn btn-outline-secondary btn-sm">Voir tout</a>
       </div>
@@ -125,11 +126,11 @@
         <table class="table table-hover table-sm mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th>Nom</th>
-              <th>Taille</th>
-              <th>Modifié le</th>
-              <th class="text-center">Statut</th>
-              <th></th>
+              <th scope="col">Nom</th>
+              <th scope="col">Taille</th>
+              <th scope="col">Modifié le</th>
+              <th scope="col" class="text-center">Statut</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -141,20 +142,12 @@
                 {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '-' }}
               </td>
               <td class="text-center">
-                {% if doc.statut.value == 'ok' %}
-                  <span class="badge badge-ok">OK</span>
-                {% elif doc.statut.value == 'avertissement' %}
-                  <span class="badge badge-avertissement">Avertissement</span>
-                {% elif doc.statut.value == 'critique' %}
-                  <span class="badge badge-critique">Critique</span>
-                {% else %}
-                  <span class="badge badge-purge">{{ doc.statut.value }}</span>
-                {% endif %}
+                {{ ui.status_badge(doc.statut) }}
               </td>
               <td>
                 <a href="{{ url_for('documents.voir', doc_id=doc.id) }}"
-                   class="btn btn-sm btn-outline-primary" title="Consulter">
-                  <i class="bi bi-eye"></i>
+                   class="btn btn-sm btn-outline-primary" title="Consulter" aria-label="Consulter {{ doc.nom_fichier }}">
+                  <i class="bi bi-eye" aria-hidden="true"></i>
                 </a>
               </td>
             </tr>
@@ -172,7 +165,7 @@
       </div>
       {% else %}
       <div class="card-body text-center text-muted py-4 small">
-        <i class="bi bi-inbox fs-3"></i>
+        <i class="bi bi-inbox fs-3" aria-hidden="true"></i>
         <div class="mt-2">Aucun document collecté pour cette source.</div>
       </div>
       {% endif %}
@@ -183,7 +176,7 @@
 <!-- Historique des synchronisations -->
 <div class="card shadow-sm">
   <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-    <span><i class="bi bi-clock-history"></i> Historique récent</span>
+    <span><i class="bi bi-clock-history" aria-hidden="true"></i> Historique récent</span>
     <a href="{{ url_for('journaux.index', source_id=source.id) }}"
        class="btn btn-outline-secondary btn-sm">Tous les journaux</a>
   </div>
@@ -192,9 +185,9 @@
     <table class="table table-hover table-sm mb-0 align-middle">
       <thead class="table-light">
         <tr>
-          <th>Date</th>
-          <th>Type</th>
-          <th>Message</th>
+          <th scope="col">Date</th>
+          <th scope="col">Type</th>
+          <th scope="col">Message</th>
         </tr>
       </thead>
       <tbody>
@@ -204,19 +197,7 @@
             {{ j.created_at.strftime('%d/%m/%Y %H:%M') if j.created_at else '-' }}
           </td>
           <td>
-            {% if j.type_evenement.value == 'erreur' %}
-              <span class="badge text-bg-danger">Erreur</span>
-            {% elif j.type_evenement.value == 'sync' %}
-              <span class="badge text-bg-primary">Sync</span>
-            {% elif j.type_evenement.value == 'purge' %}
-              <span class="badge text-bg-warning text-dark">Purge</span>
-            {% elif j.type_evenement.value == 'acces' %}
-              <span class="badge text-bg-secondary">Accès</span>
-            {% else %}
-              <span class="badge text-bg-light text-dark border">
-                {{ j.type_evenement.value }}
-              </span>
-            {% endif %}
+            {{ ui.status_badge(j.type_evenement.value, 'event') }}
           </td>
           <td class="small">{{ j.message }}</td>
         </tr>

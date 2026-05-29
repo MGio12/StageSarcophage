@@ -52,6 +52,10 @@ class User(UserMixin, db.Model):
             return False
         return self.role.has_permission(permission)
 
+    def has_any_permission(self, *permissions: str) -> bool:
+        """Vérifie si l'utilisateur possède au moins une permission."""
+        return any(self.has_permission(permission) for permission in permissions)
+
     def is_admin(self) -> bool:
         """Vérifie si l'utilisateur est administrateur."""
         return self.role and self.role.nom == "admin"

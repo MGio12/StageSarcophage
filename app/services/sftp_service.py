@@ -11,32 +11,15 @@ import hashlib
 import logging
 import posixpath
 import stat as stat_module
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 import paramiko
 
+from app.services.connectors.base import FichierDistant, ResultatConnexion
+
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SECONDES = 10
-
-
-@dataclass
-class FichierDistant:
-    nom: str
-    chemin: str
-    taille: int
-    date_modification: datetime
-
-
-@dataclass
-class ResultatConnexion:
-    succes: bool
-    message: str
-    nb_fichiers: int = 0
-    fichiers: list[FichierDistant] = field(default_factory=list)
-    fingerprint_nouveau: str | None = None
-    fingerprint_key_type: str | None = None
 
 
 class HostKeyMismatchError(Exception):

@@ -177,3 +177,17 @@ class TestPurgerSource:
         assert (corbeille / "fiche.pdf").exists()
         suffixes = list(corbeille.glob("fiche_*.pdf"))
         assert len(suffixes) == 1
+
+    def test_purge_refuse_fichier_hors_storage(self, app, db, storage_dir, tmp_path):
+        src = _source(db, retention_jours=1)
+        outside = tmp_path.parent / f"{tmp_path.name}_outside.pdf"
+        outside.write_bytes(b"%PDF outside")
+        doc = _doc(db, src, nom="outside.pdf", age_jours=5, chemin_local=str(outside))
+
+        result = purger_source(src)
+
+        db.session.expire(doc)
+        assert result.fichiers_purges == 0
+        assert result.erreurs == 1
+        assert outside.exists()
+        assert doc.statut != StatutDocument.PURGE

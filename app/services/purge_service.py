@@ -17,6 +17,7 @@ from flask import current_app
 from app.extensions import db
 from app.models.document import Document, StatutDocument
 from app.models.journal import Journal, TypeEvenement
+from app.utils.files import chemin_dans_storage, fichier_enfant_sur, nom_fichier_sur
 
 logger = logging.getLogger(__name__)
 
@@ -106,12 +107,14 @@ def _purger_document(doc: Document, dossier_corbeille: str) -> None:
     dest = None
 
     if os.path.exists(chemin_origine):
+        chemin_origine = chemin_dans_storage(chemin_origine)
         os.makedirs(dossier_corbeille, exist_ok=True)
-        dest = os.path.join(dossier_corbeille, doc.nom_fichier)
+        chemin_dans_storage(dossier_corbeille)
+        dest = fichier_enfant_sur(dossier_corbeille, doc.nom_fichier)
         if os.path.exists(dest):
-            base, ext = os.path.splitext(doc.nom_fichier)
+            base, ext = os.path.splitext(nom_fichier_sur(doc.nom_fichier))
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            dest = os.path.join(dossier_corbeille, f"{base}_{ts}{ext}")
+            dest = fichier_enfant_sur(dossier_corbeille, f"{base}_{ts}{ext}")
         shutil.move(chemin_origine, dest)
 
     doc.statut = StatutDocument.PURGE
@@ -265,7 +268,11 @@ def restaurer_fichier_corbeille(source_id: int, nom_fichier: str) -> bool:
         True si la restauration a reussi
     """
     storage_dir = current_app.config["STORAGE_DIR"]
-    corbeille_path = os.path.join(storage_dir, _CORBEILLE, str(source_id), nom_fichier)
+    nom_corbeille = nom_fichier_sur(nom_fichier)
+    corbeille_path = fichier_enfant_sur(
+        os.path.join(storage_dir, _CORBEILLE, str(source_id)),
+        nom_corbeille,
+    )
 
     if not os.path.exists(corbeille_path):
         return False
@@ -279,13 +286,13 @@ def restaurer_fichier_corbeille(source_id: int, nom_fichier: str) -> bool:
     dossier_dest = os.path.join(storage_dir, f"{source.id}_{_slugify(source.nom)}")
     os.makedirs(dossier_dest, exist_ok=True)
 
-    base_nom = nom_fichier
-    if "_202" in nom_fichier and nom_fichier.endswith(".pdf"):
-        parts = nom_fichier.rsplit("_", 2)
+    base_nom = nom_corbeille
+    if "_202" in nom_corbeille and nom_corbeille.endswith(".pdf"):
+        parts = nom_corbeille.rsplit("_", 2)
         if len(parts) >= 3:
             base_nom = parts[0] + ".pdf"
 
-    chemin_dest = os.path.join(dossier_dest, base_nom)
+    chemin_dest = fichier_enfant_sur(dossier_dest, base_nom)
 
     try:
         shutil.move(corbeille_path, chemin_dest)

@@ -17,6 +17,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 
 from app.models.document import Document, StatutDocument
 from app.models.source import Source
+from app.utils.sanitization import echapper_html, neutraliser_cellule_tableur, nom_feuille_excel
 
 
 STATUT_COLORS = {
@@ -72,11 +73,11 @@ def generer_rapport_excel(source_id: Optional[int] = None) -> bytes:
         crit = sum(1 for d in docs if d.statut == StatutDocument.CRITIQUE)
         total = len(docs)
 
-        ws_recap.append([source.nom, ok, avert, crit, total])
+        ws_recap.append([neutraliser_cellule_tableur(source.nom), ok, avert, crit, total])
         for cell in ws_recap[ws_recap.max_row]:
             cell.border = thin_border
 
-        ws_source = wb.create_sheet(title=source.nom[:31])
+        ws_source = wb.create_sheet(title=nom_feuille_excel(source.nom))
         ws_source.append(["Fichier", "Statut", "Taille (Ko)", "Date modification", "Date collecte"])
         for cell in ws_source[1]:
             cell.font = header_font
@@ -88,7 +89,13 @@ def generer_rapport_excel(source_id: Optional[int] = None) -> bytes:
             date_mod = doc.date_modification_source.strftime("%d/%m/%Y %H:%M") if doc.date_modification_source else ""
             date_coll = doc.date_collecte.strftime("%d/%m/%Y %H:%M") if doc.date_collecte else ""
 
-            ws_source.append([doc.nom_fichier, doc.statut.value, taille_ko, date_mod, date_coll])
+            ws_source.append([
+                neutraliser_cellule_tableur(doc.nom_fichier),
+                neutraliser_cellule_tableur(doc.statut.value),
+                taille_ko,
+                date_mod,
+                date_coll,
+            ])
 
             row = ws_source.max_row
             color = STATUT_COLORS.get(doc.statut, "FFFFFF")
@@ -176,7 +183,13 @@ def generer_rapport_pdf(source_id: Optional[int] = None) -> bytes:
         ok = sum(1 for d in docs if d.statut == StatutDocument.OK)
         avert = sum(1 for d in docs if d.statut == StatutDocument.AVERTISSEMENT)
         crit = sum(1 for d in docs if d.statut == StatutDocument.CRITIQUE)
-        recap_data.append([source.nom[:30], str(ok), str(avert), str(crit), str(len(docs))])
+        recap_data.append([
+            echapper_html(source.nom[:30]),
+            str(ok),
+            str(avert),
+            str(crit),
+            str(len(docs)),
+        ])
 
     if len(recap_data) > 1:
         elements.append(Paragraph("Recapitulatif par source", subtitle_style))
@@ -202,15 +215,15 @@ def generer_rapport_pdf(source_id: Optional[int] = None) -> bytes:
         if not docs:
             continue
 
-        elements.append(Paragraph(f"Source : {source.nom}", subtitle_style))
+        elements.append(Paragraph(f"Source : {echapper_html(source.nom)}", subtitle_style))
 
         doc_data = [["Fichier", "Statut", "Taille", "Modification"]]
         for d in docs[:50]:
             taille = f"{d.taille_octets / 1024:.0f} Ko" if d.taille_octets else "-"
             date = d.date_modification_source.strftime("%d/%m/%Y") if d.date_modification_source else "-"
             doc_data.append([
-                d.nom_fichier[:40] + ("..." if len(d.nom_fichier) > 40 else ""),
-                d.statut.value,
+                echapper_html(d.nom_fichier[:40] + ("..." if len(d.nom_fichier) > 40 else "")),
+                echapper_html(d.statut.value),
                 taille,
                 date
             ])

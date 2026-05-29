@@ -39,6 +39,7 @@ PERMISSIONS_DISPONIBLES = {
     "sources.delete": "Supprimer les sources",
     "sources.sync": "Declencher la synchronisation",
     "sources.purge": "Declencher la purge",
+    "sources.local": "Configurer une source locale",
     "documents.view": "Voir les documents",
     "documents.download": "Telecharger les documents",
     "journal.view": "Voir les journaux",

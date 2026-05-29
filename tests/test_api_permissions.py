@@ -106,9 +106,10 @@ def test_download_refuse_chemin_hors_storage(client, db, app, tmp_path):
     assert response.status_code == 403
 
 
-def test_api_post_sync_est_exempte_csrf(client, db, app):
+def test_api_post_sync_est_exempte_csrf_et_retourne_job(client, db, app):
     token = _token(db, {"sources.sync": True})
     src = _source(db)
+    app.config["JOBS_RUN_INLINE"] = True
     ancien_csrf = app.config["WTF_CSRF_ENABLED"]
     app.config["WTF_CSRF_ENABLED"] = True
     try:
@@ -121,8 +122,11 @@ def test_api_post_sync_est_exempte_csrf(client, db, app):
     finally:
         app.config["WTF_CSRF_ENABLED"] = ancien_csrf
 
-    assert response.status_code == 200
-    assert response.get_json()["success"] is True
+    assert response.status_code == 202
+    body = response.get_json()
+    assert body["job"]["id"]
+    assert body["job"]["status"] == "succeeded"
+    assert body["job"]["status_url"].endswith(f"/api/v1/jobs/{body['job']['id']}")
 
 
 def test_api_sync_masque_exception_interne(client, db):
@@ -135,7 +139,32 @@ def test_api_sync_masque_exception_interne(client, db):
     ):
         response = client.post(f"/api/v1/sources/{src.id}/sync", headers=_headers(token))
 
-    assert response.status_code == 500
+    assert response.status_code == 202
     body = response.get_json()
-    assert body["error"] == "Synchronization failed"
-    assert "/etc/shadow" not in body["error"]
+    job_response = client.get(body["job"]["status_url"], headers=_headers(token))
+    assert job_response.status_code == 200
+    job = job_response.get_json()["job"]
+    assert job["status"] == "failed"
+    assert job["error"] == "Erreur interne pendant le traitement du job."
+    assert "/etc/shadow" not in job["error"]
+
+
+def test_api_job_status_requiert_permission_operation(client, db):
+    token = _token(db, {"sources.view": True})
+    src = _source(db)
+
+    from app.models.background_job import BackgroundJob
+
+    job = BackgroundJob(
+        operation="source_sync",
+        status="succeeded",
+        payload={"source_id": src.id},
+        result={"fichiers_copies": 0},
+    )
+    db.session.add(job)
+    db.session.commit()
+
+    response = client.get(f"/api/v1/jobs/{job.id}", headers=_headers(token))
+
+    assert response.status_code == 403
+    assert "sources.sync" in response.get_json()["missing_permissions"]

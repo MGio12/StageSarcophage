@@ -13,6 +13,7 @@ from app.models.notification_config import NotificationConfig
 from app.models.document import Document, StatutDocument
 from app.models.source import Source
 from app.services.email_service import envoyer_email
+from app.utils.sanitization import echapper_html, texte_entete_email
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,11 @@ def notifier_documents_critiques(source: Source, documents: List[Document]) -> i
         logger.debug("Pas de destinataires pour les notifications critiques")
         return 0
 
-    sujet = f"[ALERTE] {len(documents)} document(s) critique(s) - {source.nom}"
+    source_nom = echapper_html(source.nom)
+    sujet = texte_entete_email(f"[ALERTE] {len(documents)} document(s) critique(s) - {source.nom}")
 
     docs_list = "\n".join(
-        f"<li>{doc.nom_fichier}</li>" for doc in documents[:20]
+        f"<li>{echapper_html(doc.nom_fichier)}</li>" for doc in documents[:20]
     )
     if len(documents) > 20:
         docs_list += f"<li><em>... et {len(documents) - 20} autre(s)</em></li>"
@@ -53,7 +55,7 @@ def notifier_documents_critiques(source: Source, documents: List[Document]) -> i
     <html>
     <body>
         <h2>Alerte documents critiques</h2>
-        <p>Les documents suivants de la source <strong>{source.nom}</strong>
+        <p>Les documents suivants de la source <strong>{source_nom}</strong>
         ont atteint le seuil critique ({source.seuil_critique_jours} jours) :</p>
         <ul>{docs_list}</ul>
         <p>Ces documents n'ont pas été mis à jour depuis plus de {source.seuil_critique_jours} jours.</p>
@@ -93,18 +95,19 @@ def notifier_erreur_connexion(source: Source) -> int:
         logger.debug("Pas de destinataires pour les notifications d'erreurs")
         return 0
 
-    sujet = f"[ERREUR] Échec de connexion répété - {source.nom}"
+    sujet = texte_entete_email(f"[ERREUR] Échec de connexion répété - {source.nom}")
+    source_nom = echapper_html(source.nom)
 
     corps_html = f"""
     <html>
     <body>
         <h2>Erreur de connexion</h2>
-        <p>La source <strong>{source.nom}</strong> a échoué {source.echecs_consecutifs} fois consécutives.</p>
+        <p>La source <strong>{source_nom}</strong> a échoué {source.echecs_consecutifs} fois consécutives.</p>
         <p><strong>Détails de la source :</strong></p>
         <ul>
-            <li>Protocole : {source.protocole}</li>
-            <li>Adresse : {source.adresse or 'N/A'}</li>
-            <li>Port : {source.port or 'N/A'}</li>
+            <li>Protocole : {echapper_html(source.protocole)}</li>
+            <li>Adresse : {echapper_html(source.adresse or 'N/A')}</li>
+            <li>Port : {echapper_html(source.port or 'N/A')}</li>
         </ul>
         <p>Veuillez vérifier la configuration et la connectivité.</p>
         <hr>

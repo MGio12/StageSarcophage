@@ -5,6 +5,7 @@ from app.models.document import Document
 from app.models.journal import Journal
 from app.models.ssh_fingerprint import SSHFingerprint
 from app.models.api_token import APIToken
+from app.models.background_job import BackgroundJob
 from app.models.notification_config import NotificationConfig
 from app.models.setting import Setting, init_settings
 
@@ -18,6 +19,7 @@ __all__ = [
     "Journal",
     "SSHFingerprint",
     "APIToken",
+    "BackgroundJob",
     "NotificationConfig",
     "Setting",
     "init_settings",

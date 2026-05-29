@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import os
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch
@@ -37,6 +38,18 @@ def _source_sftp(db, nom="Src-SFTP"):
         protocole="sftp",
         adresse="192.168.1.50",
         chemin_distant="/data/docs",
+    )
+    db.session.add(src)
+    db.session.flush()
+    return src
+
+
+def _source_locale(db, chemin, nom="Src-Local"):
+    src = Source(
+        nom=nom,
+        type_serveur="linux",
+        protocole="local",
+        chemin_distant=str(chemin),
     )
     db.session.add(src)
     db.session.flush()
@@ -221,3 +234,30 @@ class TestSynchroniserSource:
         assert result.fichiers_copies == 2   # nouveau + modifié
         assert result.fichiers_ignores == 1  # inchangé
         assert result.erreurs == 0
+
+
+class TestSourcesLocales:
+    def test_source_locale_refusee_hors_racines_autorisees(self, app, db, tmp_path):
+        lister_fichiers_local = importlib.import_module("app.services.local_service").lister_fichiers
+        allowed = tmp_path / "allowed"
+        outside = tmp_path / "outside"
+        allowed.mkdir()
+        outside.mkdir()
+        (outside / "doc.pdf").write_bytes(CONTENU_PDF)
+        app.config["LOCAL_SOURCE_ALLOWED_ROOTS"] = str(allowed)
+        src = _source_locale(db, outside)
+
+        with pytest.raises(ValueError, match="racines autorisees"):
+            lister_fichiers_local(src)
+
+    def test_source_locale_autorisee_dans_racine_configuree(self, app, db, tmp_path):
+        lister_fichiers_local = importlib.import_module("app.services.local_service").lister_fichiers
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        (allowed / "doc.pdf").write_bytes(CONTENU_PDF)
+        app.config["LOCAL_SOURCE_ALLOWED_ROOTS"] = str(allowed)
+        src = _source_locale(db, allowed)
+
+        fichiers = lister_fichiers_local(src)
+
+        assert [f.nom for f in fichiers] == ["doc.pdf"]

@@ -4,8 +4,10 @@ from unittest.mock import patch
 from app.models.role import Role
 from app.models.user import User
 from app.routes.auth import _authentifier_utilisateur, _is_safe_next_url
+from app import create_app
 from app.services.ldap_service import (
     LDAPConfig,
+    authentifier_ldap,
     _filtre_utilisateur,
     synchroniser_groupes_utilisateurs,
     tester_connexion_ldap,
@@ -108,6 +110,47 @@ def test_tester_connexion_ldap_masque_exception(app):
     assert message == "Erreur LDAP."
     assert "super-secret" not in message
     assert "/etc/ldap.conf" not in message
+
+
+def test_production_refuse_ldap_sans_tls(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "prod-secret")
+    monkeypatch.setenv(
+        "ENCRYPTION_KEY",
+        "gAAAAABlZHVtbXlfa2V5X2Zvcl90ZXN0aW5nX25vdF91c2Vk",
+    )
+    from cryptography.fernet import Fernet
+
+    monkeypatch.setenv("ENCRYPTION_KEY", Fernet.generate_key().decode())
+    monkeypatch.setenv("LDAP_ENABLED", "true")
+    monkeypatch.setenv("LDAP_HOST", "ldap.example.local")
+    monkeypatch.setenv("LDAP_USE_SSL", "false")
+
+    with patch("app.scheduler.tasks.demarrer_scheduler"):
+        try:
+            create_app("production")
+        except RuntimeError as exc:
+            message = str(exc)
+        else:
+            raise AssertionError("create_app('production') should reject LDAP without TLS")
+
+    assert "LDAP_REQUIRE_TLS" in message
+
+
+def test_authentifier_ldap_configure_timeout(app):
+    app.config.update(
+        LDAP_ENABLED=True,
+        LDAP_HOST="ldap.example.local",
+        LDAP_BIND_DN="CN=svc,DC=example,DC=local",
+        LDAP_BIND_PASSWORD="super-secret",  # pragma: allowlist secret
+        LDAP_BASE_DN="DC=example,DC=local",
+        LDAP_TIMEOUT_SECONDS=7,
+    )
+
+    with patch("app.services.ldap_service.Server") as server_cls, \
+         patch("app.services.ldap_service._trouver_dn_utilisateur", return_value=None):
+        authentifier_ldap("jdupont", "motdepasse")
+
+    assert server_cls.call_args.kwargs["connect_timeout"] == 7
 
 
 def test_sync_groupes_ldap_masque_exception(app, db):

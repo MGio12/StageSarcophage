@@ -4,15 +4,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h5 mb-0 text-truncate" title="{{ doc.nom_fichier }}">
-    <i class="bi bi-file-earmark-pdf text-danger"></i> {{ doc.nom_fichier }}
+    <i class="bi bi-file-earmark-pdf text-danger" aria-hidden="true"></i> {{ doc.nom_fichier }}
   </h1>
   <div class="d-flex gap-2 flex-shrink-0 ms-2">
     <a href="{{ url_for('documents.telecharger', doc_id=doc.id) }}"
        class="btn btn-primary btn-sm">
-      <i class="bi bi-download"></i> Télécharger
+      <i class="bi bi-download" aria-hidden="true"></i> Télécharger
     </a>
     <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left"></i> Retour
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Retour
     </a>
   </div>
 </div>
@@ -40,7 +40,7 @@
   <div class="col-lg-3">
     <div class="card shadow-sm">
       <div class="card-header fw-semibold small">
-        <i class="bi bi-info-circle"></i> Métadonnées
+        <i class="bi bi-info-circle" aria-hidden="true"></i> Métadonnées
       </div>
       <ul class="list-group list-group-flush small">
         <li class="list-group-item">
@@ -75,15 +75,15 @@
           <div class="mt-1">
             {% if doc.statut.value == 'ok' %}
               <span class="badge badge-ok">
-                <i class="bi bi-check-circle"></i> OK
+                <i class="bi bi-check-circle" aria-hidden="true"></i> OK
               </span>
             {% elif doc.statut.value == 'avertissement' %}
               <span class="badge badge-avertissement">
-                <i class="bi bi-exclamation-triangle"></i> Avertissement
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Avertissement
               </span>
             {% elif doc.statut.value == 'critique' %}
               <span class="badge badge-critique">
-                <i class="bi bi-x-circle"></i> Critique
+                <i class="bi bi-x-circle" aria-hidden="true"></i> Critique
               </span>
             {% else %}
               <span class="badge badge-purge">{{ doc.statut.value }}</span>

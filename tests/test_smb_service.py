@@ -113,6 +113,15 @@ class TestListerFichiersSMB:
     @patch("app.services.smb_service.smbclient.reset_connection_cache")
     @patch("app.services.smb_service.smbclient.scandir")
     @patch("app.services.smb_service.smbclient.register_session")
+    def test_register_session_utilise_timeout_effectif(self, mock_register, mock_scandir, mock_reset):
+        mock_scandir.return_value = iter([])
+        lister_fichiers(_Source())
+        _, kwargs = mock_register.call_args
+        assert kwargs.get("connection_timeout") == 10
+
+    @patch("app.services.smb_service.smbclient.reset_connection_cache")
+    @patch("app.services.smb_service.smbclient.scandir")
+    @patch("app.services.smb_service.smbclient.register_session")
     def test_ignore_les_noms_distants_dangereux(self, mock_register, mock_scandir, mock_reset):
         mock_scandir.return_value = iter([
             _mock_entry("..\\secret.pdf"),

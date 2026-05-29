@@ -1,5 +1,6 @@
 """Tests de sécurité : sanitization des noms de fichiers, path traversal."""
 import os
+import builtins
 import inspect
 import re
 from pathlib import Path
@@ -119,3 +120,27 @@ def test_entetes_securite_production_utilisent_csp_nonce(monkeypatch):
     assert "base-uri 'self'" in csp
     assert "form-action 'self'" in csp
     assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_entetes_securite_ne_dependent_pas_de_flask_talisman(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key")
+    monkeypatch.setenv("ENCRYPTION_KEY", Fernet.generate_key().decode())
+    monkeypatch.delenv("FORCE_HTTPS", raising=False)
+    real_import = builtins.__import__
+
+    def block_talisman(name, *args, **kwargs):
+        if name == "flask_talisman":
+            raise ImportError("flask_talisman unavailable")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", block_talisman)
+    with patch("app.scheduler.tasks.demarrer_scheduler"):
+        production_app = create_app("production")
+
+    response = production_app.test_client().get(
+        "/api/v1/health",
+        base_url="https://example.test",
+    )
+
+    assert response.status_code == 200
+    assert "Content-Security-Policy" in response.headers
