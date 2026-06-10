@@ -94,3 +94,15 @@ dmypy.json
 # === Scratch refonte visuelle (non versionné) ===
 .playwright-mcp/
 design/
+
+# === Documentation et livrables de stage non versionnés ===
+*.md
+!README.md
+docs/
+rapport_stage/
+MethodologieRapportUnivMontpellier.pdf
+RS-Barbero_Lucas*.pdf
+RAPPORT_STAGE_REGLES.md
+DESIGN.md
+cahier_des_charges.md
+*.odt

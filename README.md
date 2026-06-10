@@ -1,28 +1,93 @@
 # StageSarcophage
 
-Application web Flask pour centraliser des documents PDF de modes dégradés.
+Application Flask de centralisation et de suivi de documents PDF de modes dégradés.
 
-Le but est de récupérer régulièrement des PDF depuis des sources internes
-SFTP, SMB/CIFS ou locales, de les stocker localement, de vérifier leur fraîcheur
-et de permettre aux utilisateurs autorisés de les consulter même si les outils
-métier habituels sont indisponibles.
+L'application collecte des PDF depuis des sources internes SFTP, SMB/CIFS ou locales, conserve une copie dans un stockage contrôlé, calcule leur fraîcheur et permet la consultation par des utilisateurs autorisés. Elle fournit une interface web, une API REST avec tokens, des journaux d'audit, des jobs de synchronisation/purge et des exports de conformité.
 
-## Technologies
+## Fonctionnalités
 
-- Python 3 avec Flask pour le backend web.
-- Jinja pour générer les pages HTML côté serveur.
-- Bootstrap pour l'interface.
-- SQLite avec SQLAlchemy pour la base de données.
-- Flask-Login pour les sessions utilisateur.
-- bcrypt pour les mots de passe.
-- Paramiko pour SFTP.
-- smbprotocol pour SMB/CIFS.
-- APScheduler pour les tâches automatiques.
-- SMTP pour les notifications email.
-- Docker et Gunicorn pour un lancement production.
-- Pytest pour les tests.
+- Authentification locale et LDAP optionnelle.
+- Rôles, permissions et tokens API.
+- Sources SFTP, SMB/CIFS et locales.
+- Test de connexion et vérification des fingerprints SSH.
+- Synchronisation manuelle et planifiée.
+- Déduplication par hash SHA-256.
+- Statuts document: OK, avertissement, critique, purgé.
+- Viewer PDF, téléchargement PDF et export ZIP.
+- Purge avec corbeille et restauration.
+- Journaux d'audit.
+- Rapports PDF et Excel.
+- Notifications email configurables.
 
-## Lancement local
+## Prérequis
+
+- Python 3.12 recommandé.
+- Docker et Docker Compose pour le lancement conteneurisé.
+- Un fichier `.env` local non versionné.
+
+## Configuration
+
+Créer le fichier d'environnement:
+
+```bash
+cp .env.example .env
+```
+
+Variables minimales:
+
+```env
+SECRET_KEY=change-me
+ENCRYPTION_KEY=change-me
+STORAGE_DIR=/data/modes-degrades
+FLASK_ENV=production
+```
+
+Générer les clés:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+En production, le fichier `.env` doit rester hors Git et lisible uniquement par l'utilisateur qui lance l'application.
+
+## Lancement Docker
+
+Construire et démarrer:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Initialiser la base et créer un administrateur:
+
+```bash
+docker compose exec web flask init-db
+docker compose exec web flask create-admin --username admin --password 'mot-de-passe-solide'
+```
+
+Suivre les logs:
+
+```bash
+docker compose logs -f web
+```
+
+Arrêter:
+
+```bash
+docker compose down
+```
+
+Le conteneur expose HTTP sur le port `5000`. En production, placer l'application derrière un reverse proxy HTTPS. Si TLS est terminé par le proxy, configurer les variables suivantes selon l'infrastructure:
+
+```env
+FORCE_HTTPS=true
+SESSION_COOKIE_SECURE=true
+TRUST_PROXY=true
+```
+
+## Lancement Local
 
 Créer l'environnement Python:
 
@@ -31,219 +96,70 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt
 ```
 
-Créer un fichier `.env` à partir de l'exemple:
-
-```bash
-cp .env.example .env
-```
-
-Modifier au minimum:
-
-```bash
-SECRET_KEY=...
-ENCRYPTION_KEY=...
-STORAGE_DIR=/chemin/vers/le/dossier/data
-FLASK_ENV=development
-```
-
-Pour générer les clés:
-
-```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
-.venv/bin/python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Initialiser la base:
+Charger l'environnement et initialiser la base:
 
 ```bash
 set -a
 . ./.env
 set +a
 .venv/bin/flask --app run.py init-db
+.venv/bin/flask --app run.py create-admin --username admin --password 'mot-de-passe-solide'
 ```
 
-Créer un administrateur:
-
-```bash
-.venv/bin/flask --app run.py create-admin --username admin --password admin12345
-```
-
-Lancer le serveur:
+Démarrer le serveur:
 
 ```bash
 .venv/bin/flask --app run.py run --host 0.0.0.0 --port 5000
 ```
 
-Ouvrir ensuite:
-
-```text
-http://127.0.0.1:5000/login
-```
-
-Identifiants de test si vous avez créé l'admin ci-dessus:
-
-```text
-Utilisateur: admin
-Mot de passe: admin12345
-```
-
-## Lancement déjà préparé sur ce poste
-
-Dans l'environnement actuel, le serveur peut être lancé avec:
-
-```bash
-set -a
-. ./.env
-set +a
-.venv/bin/flask --app run.py run --host 0.0.0.0 --port 5000
-```
-
-Pour l'arrêter si un serveur est déjà lancé en arrière-plan:
-
-```bash
-kill $(cat logs/dev-server.pid)
-```
-
-Pour voir les logs:
-
-```bash
-tail -f logs/dev-server.log
-```
-
-## Vérifications rapides
-
-Healthcheck public:
+Healthcheck:
 
 ```bash
 curl http://127.0.0.1:5000/api/v1/health
 ```
 
-Tests automatisés:
-
-```bash
-.venv/bin/python -m pytest -q
-```
-
-Gate qualité complet:
-
-```bash
-make check
-```
-
-Cette commande exécute les tests avec couverture, un lint Python ciblé sur les
-erreurs critiques, Bandit, `pip-audit` et un scan de secrets limité aux fichiers
-suivis par Git.
-
-## Tester l'application
-
-Depuis l'interface web:
-
-1. Se connecter avec un compte administrateur.
-2. Aller dans `Sources`.
-3. Créer une source SFTP, SMB ou locale.
-4. Tester la connexion.
-5. Lancer une synchronisation.
-6. Aller dans `Documents`.
-7. Vérifier la liste, les filtres, le tri et la pagination.
-8. Ouvrir un PDF avec `Voir`.
-9. Télécharger un PDF.
-10. Sélectionner plusieurs documents et télécharger un ZIP.
-11. Aller dans `Journaux` pour vérifier les événements.
-12. Aller dans `Administration` pour gérer utilisateurs, rôles, tokens et notifications.
-
-API:
+Documentation API locale:
 
 ```text
 http://127.0.0.1:5000/api/v1/docs
 ```
 
-## Fonctionnalités principales
+## Exploitation
 
-- Authentification locale.
-- Authentification LDAP optionnelle.
-- Gestion des rôles et permissions.
-- Sources SFTP, SMB/CIFS et locales.
-- Test de connexion des sources.
-- Vérification des fingerprints SSH SFTP.
-- Synchronisation manuelle et planifiée.
-- Statuts document: OK, avertissement, critique, purgé.
-- Notifications email pour documents critiques et erreurs répétées.
-- Liste des documents avec filtres, tri et pagination.
-- Viewer PDF.
-- Téléchargement PDF et ZIP.
-- Archivage et restauration des sources.
-- Purge avec corbeille.
-- Journaux d'audit.
-- Rapports PDF et Excel.
-- API REST avec tokens.
-- Documentation Swagger.
+Éléments à sauvegarder:
 
-## Documentation projet
+- base SQLite du volume `db_data` ou du dossier `instance`;
+- stockage PDF du volume `pdf_data` ou du dossier configuré par `STORAGE_DIR`;
+- fichier `.env`;
+- logs si l'historique technique doit être conservé.
 
-Point d'entrée recommandé:
-
-- [Index documentation](docs/README.md)
-
-Accès direct:
-
-- [Architecture](docs/ARCHITECTURE.md): couches applicatives et invariants.
-- [Modèle de données](docs/DATA_MODEL.md): responsabilités des entités.
-- [Exploitation](docs/OPERATIONS.md): commandes de lancement, sauvegarde et dépannage.
-- [Sécurité](docs/SECURITY.md): secrets, CSP, permissions, audits et rotation Fernet.
-- [Tests et qualité](docs/TESTING.md): commandes de vérification.
-- [Statut d'implémentation](docs/IMPLEMENTATION_STATUS.md): état de la vague qualité.
-
-## Docker
-
-Construire et lancer:
-
-```bash
-docker compose build
-docker compose up -d
-```
-
-Initialiser la base dans le conteneur:
-
-```bash
-docker compose exec web flask init-db
-docker compose exec web flask create-admin --username admin --password admin12345
-```
-
-Logs:
-
-```bash
-docker compose logs -f web
-```
-
-Arrêt:
-
-```bash
-docker compose down
-```
-
-En production, placer l'application derrière un reverse proxy HTTPS et configurer
-les variables `FORCE_HTTPS`, `TRUST_PROXY` et `SESSION_COOKIE_SECURE` selon le
-mode de terminaison TLS.
-
-## Commandes utiles
-
-Mettre à jour une base existante après changement de version:
-
-```bash
-.venv/bin/flask --app run.py upgrade-db
-```
-
-Relancer une initialisation idempotente:
+Commandes utiles:
 
 ```bash
 .venv/bin/flask --app run.py init-db
+.venv/bin/flask --app run.py upgrade-db
+.venv/bin/flask --app run.py rotate-encryption-key
 ```
 
-## Données importantes
+La rotation Fernet nécessite de définir `OLD_ENCRYPTION_KEY` et `NEW_ENCRYPTION_KEY` avant la commande.
 
-À sauvegarder en production:
+## Qualité
 
-- la base SQLite;
-- le dossier de stockage des PDF;
-- le fichier `.env`;
-- les logs si l'historique technique est nécessaire.
+Installer les dépendances de développement puis lancer:
+
+```bash
+make check
+```
+
+La commande exécute les tests, Ruff, Bandit, `pip-audit`, le scan de secrets suivis par Git et le contrôle des permissions du fichier `.env`.
+
+Commandes ciblées:
+
+```bash
+make test
+make lint
+make security
+make audit
+make secrets
+make permissions
+```

@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Maxime Giovanelli" />
-  <title>Rapport de stage - Maxime Giovanelli</title>
+  <title>Développement d’une application web de centralisation et de suivi des PDF de modes dégradés</title>
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -87,11 +87,12 @@
     code span.vs { color: #4070a0; } /* VerbatimString */
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" href="rapport_stage/rapport_stage.css" />
+  <link rel="stylesheet" href="rapport_stage.css" />
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">Rapport de stage - Maxime Giovanelli</h1>
+<h1 class="title">Développement d’une application web de centralisation
+et de suivi des PDF de modes dégradés</h1>
 <p class="subtitle">Rapport de stage - Bachelor Universitaire de
 Technologie Informatique - Année 2025-2026</p>
 <p class="author">Maxime Giovanelli</p>
@@ -155,10 +156,10 @@ retours techniques et sa formulation claire du besoin métier ont aidé à
 garder un périmètre compatible avec les contraintes réelles
 d’exploitation hospitalière.</p>
 <p>Je remercie également Olivier Pantz, tuteur pédagogique à l’IUT Nice
-Côte d’Azur, pour le suivi du stage et les conseils méthodologiques. Je
-remercie enfin l’équipe de la DSI du Centre Antoine Lacassagne pour son
-accueil et pour les échanges qui m’ont permis de comprendre le
-fonctionnement informatique de l’établissement.</p>
+Côte d’Azur, pour le suivi du stage et les conseils méthodologiques,
+ainsi que l’ensemble de l’équipe de la DSI pour son accueil et pour les
+échanges qui m’ont permis de comprendre le fonctionnement informatique
+de l’établissement.</p>
 <div class="page-break">
 
 </div>
@@ -171,25 +172,21 @@ devient indisponible, les équipes soignantes et administratives doivent
 retrouver rapidement des documents PDF de modes dégradés : formulaires,
 procédures et fiches réflexes. Avant le projet, ces documents étaient
 répartis sur plusieurs stockages hétérogènes (SFTP, SMB/CIFS, dossier
-local). Aucun outil ne donnait à la DSI une vue centralisée ni un
+local). Or, aucun outil ne donnait à la DSI une vue centralisée ni un
 contrôle simple de leur fraîcheur.</p>
 <p>La problématique du stage était donc la suivante : comment
 centraliser et fiabiliser l’accès à ces documents critiques, tout en
-contrôlant leur fraîcheur, leur traçabilité et la sécurité des accès
-dans un environnement hospitalier soumis à des exigences HDS ?</p>
-<p>Le travail a suivi quatre phases : analyse du cahier des charges et
-des contraintes HDS ; conception de l’architecture Flask/SQLite ;
-développement itératif des fonctionnalités (sources, synchronisation,
-interface, sécurité, API, tests) ; rédaction de la documentation
-d’exploitation.</p>
+répondant à des exigences parfois contradictoires — fraîcheur
+documentaire garantie, traçabilité complète des accès, et sécurité
+adaptée à un environnement HDS ?</p>
 <p>L’application livrée, nommée StageSarcophage, utilise Flask, Jinja,
 SQLAlchemy, SQLite, APScheduler et Docker. Elle collecte les PDF depuis
 trois types de sources, calcule un état de fraîcheur par document,
 fournit une interface web avec viewer PDF, gère une purge progressive
-avec corbeille, expose une API REST et journalise les opérations. Les
-contrôles de sécurité couvrent les sessions, les tokens Bearer, le CSRF,
-la CSP, le chiffrement Fernet des identifiants et le confinement des
-chemins.</p>
+avec corbeille et expose une API REST. Les opérations sont journalisées
+; les contrôles de sécurité couvrent les sessions, les tokens Bearer, le
+CSRF, la CSP, le chiffrement Fernet des identifiants et le confinement
+des chemins — autant d’exigences directement issues du contexte HDS.</p>
 <p>Le livrable est une base applicative documentée, testée et
 conteneurisable. Il reste à la valider sur l’infrastructure réelle de la
 DSI.</p>
@@ -206,10 +203,6 @@ freshness or availability.</p>
 <p>The main question was: how can access to these critical documents be
 centralized and secured while keeping freshness tracking, auditability
 and access control compatible with HDS requirements?</p>
-<p>The work followed four phases: requirements and HDS constraints
-analysis; Flask/SQLite architecture design; iterative development
-(sources, synchronization, interface, security, API, tests); and
-operational documentation.</p>
 <p>The delivered application, StageSarcophage, uses Flask, Jinja,
 SQLAlchemy, SQLite, APScheduler and Docker. It collects PDFs from three
 source types, computes a freshness status for each document, provides a
@@ -227,7 +220,7 @@ production use.</p>
 <ol type="1">
 <li>Remerciements</li>
 <li>Résumé et Summary</li>
-<li>Table des illustrations et glossaire</li>
+<li>Glossaire</li>
 <li>Introduction</li>
 <li>Partie I : Analyse de la situation
 <ul>
@@ -252,14 +245,7 @@ production use.</p>
 <ul>
 <li>III.1 Résultats obtenus</li>
 <li>III.2 Perspectives et évolutions</li>
-</ul></li>
-<li>Accompagnement du CSU lors des interventions
-<ul>
-<li>Types d’interventions</li>
-<li>Notions abordées</li>
-<li>Environnement informatique hospitalier</li>
-<li>Continuité de service en milieu hospitalier</li>
-<li>Relation avec les utilisateurs hospitaliers</li>
+<li>III.3 Accompagnement du CSU lors des interventions</li>
 </ul></li>
 <li>Difficultés rencontrées</li>
 <li>Conclusion</li>
@@ -267,55 +253,22 @@ production use.</p>
 <li>Annexes</li>
 <li>Table des illustrations</li>
 </ol>
-<h1 id="table-des-illustrations">Table des illustrations</h1>
-<ol type="1">
-<li>Situation avant et après StageSarcophage</li>
-<li>Architecture applicative (couches Flask)</li>
-<li>Modèle de données : entités et relations</li>
-<li>Flux de synchronisation d’un document PDF</li>
-<li>Interface : tableau de bord</li>
-<li>Cycle de vie d’un document et purge</li>
-<li>Architecture de sécurité</li>
-<li>Architecture de déploiement</li>
-<li>Analyse comparative des choix technologiques</li>
-<li>Vue d’ensemble de l’API REST</li>
-<li>Planning prévisionnel et réalisé</li>
-<li>Pipeline de qualité <code>make check</code></li>
-</ol>
 <h1 id="glossaire">Glossaire</h1>
-<p><strong>API REST</strong> : interface HTTP exposée sous
-<code>/api/v1</code>, utilisant des tokens Bearer pour
-l’authentification.</p>
-<p><strong>APScheduler</strong> : bibliothèque Python de planification
-de tâches périodiques, utilisée pour déclencher les synchronisations
-automatiques.</p>
-<p><strong>Bearer token</strong> : jeton transmis dans l’en-tête
-<code>Authorization</code>, permettant l’accès programmatique à l’API
-sans session web.</p>
 <p><strong>CSRF</strong> : Cross-Site Request Forgery : attaque forçant
 un navigateur authentifié à envoyer une requête non voulue. Les
 formulaires modifiants sont protégés par un jeton CSRF.</p>
 <p><strong>CSP</strong> : Content Security Policy : en-tête HTTP
 limitant les ressources chargées par le navigateur, ce qui réduit la
 surface d’attaque XSS.</p>
-<p><strong>DSI</strong> : Direction des Systèmes d’Information du Centre
-Antoine Lacassagne.</p>
 <p><strong>Fernet</strong> : schéma de chiffrement symétrique
 authentifié (AES-128-CBC + HMAC-SHA256), utilisé pour chiffrer les
 identifiants des sources en base.</p>
-<p><strong>GED</strong> : Gestion Électronique de Documents : système
-dédié au cycle de vie documentaire complet. StageSarcophage n’est pas
-une GED ; il cible uniquement la collecte et la consultation des PDF de
-modes dégradés.</p>
 <p><strong>HDS</strong> : Hébergeur de Données de Santé : certification
 française encadrant l’hébergement de données médicales.</p>
 <p><strong>Mode dégradé</strong> : procédure ou document utilisé lorsque
 le fonctionnement normal d’un outil métier n’est plus disponible.</p>
 <p><strong>RBAC</strong> : Role-Based Access Control : les droits sont
 attribués à des rôles, eux-mêmes assignés aux utilisateurs.</p>
-<p><strong>SHA-256</strong> : fonction de hachage cryptographique,
-utilisée pour détecter les fichiers inchangés et éviter les copies
-inutiles.</p>
 <p><strong>SFTP</strong> : SSH File Transfer Protocol : transfert de
 fichiers sécurisé via SSH, utilisé pour les sources Linux.</p>
 <p><strong>SMB/CIFS</strong> : Server Message Block / Common Internet
@@ -336,24 +289,25 @@ les outils numériques habituels.</p>
 <p>Ces documents existent dans l’établissement, mais leur gestion reste
 dispersée : un serveur SFTP Linux pour le bloc opératoire, un partage
 SMB Windows pour le service des urgences, un dossier local pour d’autres
-services. Il n’existait pas de vue centralisée pour répondre à des
-questions simples : ce document est-il encore à jour ? Existe-t-il
-toujours sur le serveur source ? Quand a-t-il été modifié pour la
-dernière fois ?</p>
-<p>La solution devait traiter plusieurs contraintes en même temps :
-fédérer des protocoles hétérogènes dans un point d’accès unique ;
-calculer un état de fraîcheur documentaire sans saturer le réseau ;
-protéger les identifiants de connexion aux serveurs tout en gardant une
-administration simple ; déployer l’application sur une infrastructure
-hospitalière sans ajouter de composants lourds. La mission confiée par
-la DSI était de concevoir et développer une application web interne
-répondant à ce périmètre.</p>
-<p>StageSarcophage est l’application développée pendant le stage. Elle
-collecte les PDF depuis les sources déclarées, conserve une copie locale
-avec déduplication, calcule un état de fraîcheur par document, fournit
-une interface web de consultation et journalise les opérations. La
-figure 1 montre le passage d’un accès dispersé sur plusieurs serveurs à
-un accès centralisé, sécurisé et traçable.</p>
+services. Cette fragmentation créait un vide opérationnel : il
+n’existait pas de vue centralisée pour répondre à des questions simples
+comme « ce document est-il encore à jour ? », « existe-t-il toujours sur
+le serveur source ? » ou « quand a-t-il été modifié pour la dernière
+fois ? ».</p>
+<p>La mission confiée par la DSI était de concevoir et développer une
+application web interne pour combler ce vide. Concrètement, cela
+impliquait de résoudre quatre contraintes simultanées : fédérer des
+protocoles hétérogènes dans un point d’accès unique ; calculer un état
+de fraîcheur documentaire sans saturer le réseau ; protéger les
+identifiants de connexion aux serveurs tout en gardant une
+administration simple ; et déployer l’application sur une infrastructure
+hospitalière sans ajouter de composants lourds.</p>
+<p>J’ai conçu et développé StageSarcophage pour répondre à ce besoin.
+L’application collecte les PDF depuis les sources déclarées, conserve
+une copie locale avec déduplication, calcule un état de fraîcheur par
+document, fournit une interface web de consultation et journalise les
+opérations. La figure 1 montre le passage d’un accès dispersé sur
+plusieurs serveurs à un accès centralisé, sécurisé et traçable.</p>
 <figure>
 <img src="images/schema-avant-apres.png" style="width:100.0%"
 alt="Figure 1 : Situation avant et après StageSarcophage : dispersion des sources et accès centralisé." />
@@ -361,13 +315,16 @@ alt="Figure 1 : Situation avant et après StageSarcophage : dispersion des sourc
 StageSarcophage : dispersion des sources et accès
 centralisé.</figcaption>
 </figure>
-<p>Le rapport suit trois parties. La première présente l’établissement,
-la DSI, les contraintes HDS, les besoins et les exigences. La deuxième
-détaille la conception et la réalisation technique ; les choix
-d’implémentation y sont comparés aux alternatives possibles. La
-troisième fait le bilan du projet : résultats obtenus, difficultés
-rencontrées, solutions retenues et priorités pour une reprise par la
-DSI.</p>
+<p>Le rapport suit trois parties, construites sur un plan
+problème/solution. La première analyse la situation : l’établissement,
+la DSI, les contraintes HDS et les besoins qui ont délimité le
+périmètre. La deuxième retrace la conception et la réalisation dans
+l’ordre où les problèmes se sont réellement posés : pour chaque
+sous-système, j’expose la difficulté rencontrée, les solutions
+envisagées et celle que j’ai retenue — y compris mes premières versions
+imparfaites, car ce sont souvent elles qui m’ont le plus appris. La
+troisième dresse le bilan : ce qui est livré, ce qui reste à valider, et
+les priorités pour une reprise par la DSI.</p>
 <div class="page-break">
 
 </div>
@@ -378,29 +335,29 @@ du Centre Antoine Lacassagne</h2>
 <p>Le Centre Antoine Lacassagne (CAL) est un Centre de Lutte Contre le
 Cancer (CLCC) situé au 33 avenue de Valombrose à Nice. Fondé en 1947, il
 fait partie des vingt établissements du réseau Unicancer entièrement
-dédiés à la prise en charge du cancer. L’établissement accueille chaque
-année plus de 15 000 patients et emploie environ 800 personnes. Il
-couvre les trois missions des CLCC : soins (oncologie médicale,
-radiothérapie, chirurgie), recherche clinique et formation.</p>
-<p>Sur le plan informatique, le Centre dispose d’une DSI qui gère
-l’infrastructure réseau, les serveurs, les applications métier (dossier
-patient informatisé, système d’information radiologique, outils
-administratifs) et la sécurité des systèmes. L’établissement traite des
-données de santé au sens de la réglementation française. Son système
-d’information doit donc intégrer des exigences fortes de sécurité, de
-traçabilité et de confidentialité.</p>
+dédiés à la prise en charge du cancer, et accueille chaque année plus de
+15 000 patients pour environ 800 personnes employées. Il couvre les
+trois missions des CLCC : soins (oncologie médicale, radiothérapie,
+chirurgie), recherche clinique et formation.</p>
+<p>Ce qui rend le CAL particulier pour un projet informatique, c’est la
+nature des données qu’il traite. Son système d’information porte des
+données de santé au sens de la réglementation française — dossiers
+patients, prescriptions, imagerie médicale — ce qui impose des exigences
+fortes de sécurité, de traçabilité et de confidentialité. La DSI gère
+l’infrastructure réseau, les serveurs, les applications métier et la
+sécurité des systèmes dans ce cadre contraint.</p>
 <h2 id="i.2-service-dsi-et-contraintes-hds">I.2 Service DSI et
 contraintes HDS</h2>
 <p>La DSI du CAL intervient sur un périmètre large : gestion des accès,
 exploitation des serveurs, déploiement d’applications internes,
 sauvegardes et continuité de service. Le contexte hospitalier impose
 plusieurs contraintes spécifiques.</p>
-<p><strong>Exigences HDS</strong> : l’hébergement de données de santé
-est encadré en France par la certification HDS (Hébergeur de Données de
-Santé). Elle demande des mesures de sécurité documentées, une
-traçabilité des accès, des procédures de sauvegarde et une gestion
-formalisée des incidents. Pour StageSarcophage, cela se traduit
-notamment par le chiffrement des identifiants, les journaux
+<p><strong>Exigences HDS</strong> : la certification HDS (Hébergeur de
+Données de Santé) encadre en France l’hébergement de données médicales.
+Elle repose sur trois piliers : documenter les mesures de sécurité,
+tracer tous les accès, et formaliser les procédures de sauvegarde et de
+gestion des incidents. Pour StageSarcophage, ces exigences se sont
+traduites concrètement par le chiffrement des identifiants, les journaux
 d’opérations, le contrôle des accès par rôle et la gestion séparée des
 secrets.</p>
 <p><strong>Continuité d’activité</strong> : un établissement de santé
@@ -417,59 +374,60 @@ acceptable, pas de serveur de base de données externe requis,
 déploiement par conteneur Docker, configuration par variables
 d’environnement.</p>
 <h2 id="i.3-analyse-des-besoins">I.3 Analyse des besoins</h2>
-<p>L’analyse des besoins a structuré la demande en trois niveaux :</p>
-<p><strong>Besoins fonctionnels primaires</strong> (cœur du système) : -
-Déclarer des sources (SFTP, SMB, local), tester leur connexion,
-configurer leur fréquence de synchronisation. - Synchroniser
-automatiquement les PDF depuis ces sources, en conservant une copie
-locale. - Suivre la fraîcheur de chaque document (date de dernière
-modification source, statut ok/avertissement/critique). - Permettre la
-consultation, la recherche, le filtrage et le téléchargement des
-documents depuis une interface web. - Conserver un journal de toutes les
-opérations (synchronisations, purges, connexions, erreurs).</p>
-<p><strong>Besoins fonctionnels secondaires</strong> (qualité
-d’exploitation) : - Gestion des utilisateurs, des rôles et des
-permissions (RBAC). - API REST pour permettre des intégrations futures
-(monitoring, outils DSI). - Purge automatique des documents dépassant
-leur durée de rétention, avec passage par une corbeille. - Notifications
-par email en cas d’erreur ou de documents critiques.</p>
-<p><strong>Contraintes non fonctionnelles</strong> : - Sécurité :
-chiffrement des identifiants, protection des sessions, headers HTTP,
-contrôle des chemins. - Déployabilité : Docker + Gunicorn, configuration
-par variables d’environnement, SQLite. - Maintenabilité : code structuré
-en couches, tests automatisés, documentation d’exploitation.</p>
+<p>L’analyse des besoins a structuré la demande en trois niveaux, du
+plus critique au plus opérationnel.</p>
+<p><strong>Besoins fonctionnels primaires</strong> — le cœur du système,
+sans lequel rien d’autre n’a de sens :</p>
+<ul>
+<li>Déclarer des sources (SFTP, SMB, local), tester leur connexion,
+configurer leur fréquence de synchronisation.</li>
+<li>Synchroniser automatiquement les PDF depuis ces sources, en
+conservant une copie locale.</li>
+<li>Suivre la fraîcheur de chaque document (date de dernière
+modification source, statut ok/avertissement/critique).</li>
+<li>Permettre la consultation, la recherche, le filtrage et le
+téléchargement des documents depuis une interface web.</li>
+<li>Conserver un journal de toutes les opérations (synchronisations,
+purges, connexions, erreurs).</li>
+</ul>
+<p><strong>Besoins fonctionnels secondaires</strong> — la qualité
+d’exploitation, qui conditionne l’adoption par la DSI :</p>
+<ul>
+<li>Gestion des utilisateurs, des rôles et des permissions (RBAC).</li>
+<li>API REST pour permettre des intégrations futures (monitoring, outils
+DSI).</li>
+<li>Purge automatique des documents dépassant leur durée de rétention,
+avec passage par une corbeille.</li>
+<li>Notifications par email en cas d’erreur ou de documents
+critiques.</li>
+</ul>
+<p><strong>Contraintes non fonctionnelles</strong> — les conditions sine
+qua non d’un déploiement hospitalier :</p>
+<ul>
+<li>Sécurité : chiffrement des identifiants, protection des sessions,
+headers HTTP, contrôle des chemins.</li>
+<li>Déployabilité : Docker + Gunicorn, configuration par variables
+d’environnement, SQLite.</li>
+<li>Maintenabilité : code structuré en couches, tests automatisés,
+documentation d’exploitation.</li>
+</ul>
 <h2 id="i.4-cahier-des-charges-et-matrice-des-exigences">I.4 Cahier des
 charges et matrice des exigences</h2>
 <p>Le document <code>cahier_des_charges.md</code> fourni par la DSI
-liste les exigences détaillées. En fin de stage, l’état de livraison est
-le suivant.</p>
-<p>Livré et validé par les tests : sources SFTP, SMB/CIFS et locales ;
-test de connexion par source ; synchronisation manuelle et planifiée ;
-déduplication SHA-256 ; statuts de fraîcheur ; interface web avec viewer
-PDF, téléchargement et export ZIP ; RBAC ; chiffrement Fernet des
-identifiants ; journaux d’opérations.</p>
-<p>Partiel : la purge fonctionne, mais certains paramètres avancés n’ont
-pas été démontrés en recette ; l’API REST couvre la lecture, les
-statistiques, le déclenchement de synchronisation et le suivi des jobs,
-mais pas le CRUD sur les sources.</p>
-<p>Non entièrement résolu : LDAP est configurable mais non validé sur
-annuaire réel ; HTTPS est assuré par le reverse proxy, pas par Flask
-directement ; le benchmark “500 PDF en moins de 5 minutes” n’a pas été
-prouvé ; la sauvegarde automatique n’a pas été livrée.</p>
+liste les exigences détaillées : gestion des sources et connecteurs,
+synchronisation et déduplication, suivi de fraîcheur, consultation web,
+sécurité, API et exploitation. L’état de livraison, exigence par
+exigence, est dressé dans le bilan (partie III.1).</p>
 <p>Le projet a été planifié sur huit semaines : analyse (S1),
 architecture et modèle de données (S2), connecteurs et sources (S3),
 synchronisation et fraîcheur (S4), interface web (S5), sécurité et API
 (S6-S7), tests et documentation (S8).</p>
 <p>Le planning réalisé a suivi le planning prévisionnel dans ses grandes
-lignes. La partie sécurité et API a pris plus de temps que prévu ; ce
-décalage a été absorbé en concentrant les tests et la documentation sur
-la dernière semaine.</p>
-<figure>
-<img src="images/schema-gantt-prevu-realise.png" style="width:100.0%"
-alt="Figure 11 : Planning prévisionnel et réalisé : 8 semaines de stage avec sécurité/API prolongée." />
-<figcaption aria-hidden="true">Figure 11 : Planning prévisionnel et
-réalisé : 8 semaines de stage avec sécurité/API prolongée.</figcaption>
-</figure>
+lignes. La partie sécurité et API a pris plus de temps que prévu : plus
+on développe de fonctionnalités manipulant des fichiers et des
+identifiants, plus les points à sécuriser s’accumulent. Ce décalage a
+été absorbé en concentrant les tests et la documentation sur la dernière
+semaine.</p>
 <div class="page-break">
 
 </div>
@@ -481,33 +439,34 @@ technologiques et argumentation</h2>
 d’exploitation. Chaque composant a été choisi après comparaison avec des
 alternatives plus lourdes ou moins adaptées au besoin.</p>
 <h3 id="backend-flask">Backend : Flask</h3>
-<p>Flask est explicitement référencé dans le cahier des charges. Il est
-léger, son rendu HTML côté serveur via Jinja est natif et son
-déploiement derrière Gunicorn reste simple. Django apporte davantage de
-fonctionnalités intégrées, mais l’application n’avait pas besoin d’un
-framework complet avec administration, ORM imposé et structure projet
-plus lourde. FastAPI aurait été pertinent pour une API principalement
-asynchrone, moins pour une application dont l’interface web est rendue
-côté serveur.</p>
+<p>Le besoin était une application web interne à maintenir par une DSI,
+pas un service haute disponibilité. Flask correspondait : léger, rendu
+HTML côté serveur via Jinja natif, déploiement derrière Gunicorn simple.
+Django aurait apporté plus — administration, ORM, structure imposée —
+mais précisément ce surplus était un coût sans contrepartie pour ce
+périmètre. FastAPI aurait été pertinent pour une API principalement
+asynchrone ; moins pour une application dont l’interface web reste le
+cas d’usage principal.</p>
 <h3 id="base-de-données-sqlite-via-sqlalchemy">Base de données : SQLite
 via SQLAlchemy</h3>
-<p>SQLite en mode WAL est explicitement autorisé par le cahier des
-charges. Il est embarqué dans Python, ne nécessite aucune installation
-et se sauvegarde par copie de fichier. Ses limites concernent surtout
-les écritures concurrentes, mais le volume attendu reste faible :
-quelques synchronisations planifiées, des consultations web et des
-opérations d’administration. SQLAlchemy conserve une possibilité de
-migration vers PostgreSQL si le volume ou la concurrence augmentent.</p>
+<p>SQLite en mode WAL est embarqué dans Python, ne nécessite aucune
+installation et se sauvegarde par simple copie de fichier — trois
+avantages concrets pour un déploiement hospitalier sans DBA dédié. Ses
+limites d’écritures concurrentes ne sont pas un problème ici : le volume
+attendu reste faible (quelques synchronisations planifiées, des
+consultations web, des opérations d’administration). Et si ce volume
+devait croître, SQLAlchemy laisse ouverte la migration vers PostgreSQL
+sans réécrire la couche de données.</p>
 <h3 id="file-de-jobs-threadpoolexecutor">File de jobs :
 ThreadPoolExecutor</h3>
-<p>Le volume attendu est de quelques dizaines de synchronisations par
-jour. Un <code>ThreadPoolExecutor</code> interne suffit pour lancer ces
-tâches sans dépendance supplémentaire. Celery ou RQ apporteraient une
-meilleure persistance des jobs et une reprise plus propre après
-redémarrage, mais imposeraient Redis et un worker séparé. Ce coût
-d’exploitation n’était pas justifié pour le périmètre demandé. La perte
-d’un job en cours lors d’un arrêt du conteneur est donc documentée comme
-limite connue.</p>
+<p>Un <code>ThreadPoolExecutor</code> interne suffit pour quelques
+dizaines de synchronisations par jour — sans dépendance supplémentaire.
+Celery ou RQ offriraient une meilleure persistance des jobs et une
+reprise propre après redémarrage, mais au prix de Redis et d’un worker
+séparé à opérer. Ce coût n’était pas justifié pour ce périmètre. La
+contrepartie est assumée et documentée : si le conteneur s’arrête
+pendant une synchronisation, le job est perdu et doit être relancé
+manuellement.</p>
 <h3 id="chiffrement-des-identifiants-fernet">Chiffrement des
 identifiants : Fernet</h3>
 <p>Fernet fournit un chiffrement symétrique authentifié avec HMAC-SHA256
@@ -516,19 +475,14 @@ d’implémenter soi-même AES-CBC, ce qui réduirait la marge d’erreur sur
 des points sensibles comme l’IV ou le MAC. Stocker uniquement les
 identifiants dans des variables d’environnement n’aurait pas protégé la
 base si quelqu’un obtenait une copie du fichier SQLite.</p>
-<figure>
-<img src="images/schema-choix-technologiques.png" style="width:100.0%"
-alt="Figure 9 : Analyse comparative des choix technologiques : Flask, SQLite, ThreadPoolExecutor, Fernet face aux alternatives." />
-<figcaption aria-hidden="true">Figure 9 : Analyse comparative des choix
-technologiques : Flask, SQLite, ThreadPoolExecutor, Fernet face aux
-alternatives.</figcaption>
-</figure>
 <h2 id="ii.2-architecture-applicative">II.2 Architecture
 applicative</h2>
 <p>StageSarcophage est un monolithe Flask organisé en couches
-distinctes. Cette organisation limite le mélange entre accès HTTP,
-règles métier et accès aux fichiers, ce qui rend le code plus facile à
-tester et à reprendre.</p>
+distinctes. Ce choix n’est pas anodin : au départ, les premières routes
+mélangeaient logique d’accès réseau, règles de stockage et rendu HTML —
+ce qui rendait les tests impossibles et les bugs difficiles à isoler.
+Séparer les couches a été la première décision structurelle du
+projet.</p>
 <p>La figure 2 positionne StageSarcophage entre les sources hétérogènes,
 les utilisateurs web et les clients API.</p>
 <figure>
@@ -537,26 +491,69 @@ alt="Figure 2 : Architecture applicative de StageSarcophage : couches Flask, ser
 <figcaption aria-hidden="true">Figure 2 : Architecture applicative de
 StageSarcophage : couches Flask, services et stockage.</figcaption>
 </figure>
-<p>Les routes HTTP (<code>app/routes/</code>) gèrent uniquement
-l’authentification, la lecture des paramètres, la délégation aux
-services et le rendu. Les services (<code>app/services/</code>) portent
+<p>Les routes HTTP (<code>app/routes/</code>) se limitent à
+l’authentification, à la lecture des paramètres, à la délégation aux
+services et au rendu. Les services (<code>app/services/</code>) portent
 la logique métier : synchronisation, purge, jobs de fond, notifications,
 LDAP, connecteurs. Les modèles SQLAlchemy (<code>app/models/</code>)
 définissent le schéma de données et les invariants. Les utilitaires
-(<code>app/utils/</code>) fournissent des fonctions transverses :
+(<code>app/utils/</code>) fournissent les fonctions transverses :
 sécurité des chemins, chiffrement, sanitisation, décorateurs de
 permissions.</p>
-<p>Le modèle de données, présenté en figure 3, place <code>Source</code>
-et <code>Document</code> au centre du flux. Les autres entités
-(<code>Journal</code>, <code>BackgroundJob</code>, <code>User</code>,
-<code>Role</code>, <code>APIToken</code>) couvrent l’exploitation, le
-suivi des jobs et la sécurité.</p>
-<figure>
-<img src="images/schema-modele-donnees.png" style="width:100.0%"
-alt="Figure 3 : Modèle de données : entités SQLAlchemy et leurs relations." />
-<figcaption aria-hidden="true">Figure 3 : Modèle de données : entités
-SQLAlchemy et leurs relations.</figcaption>
-</figure>
+<p>Le modèle de données place <code>Source</code> et
+<code>Document</code> au centre du flux, liés par une relation
+un-à-plusieurs. Les autres entités (<code>Journal</code>,
+<code>BackgroundJob</code>, <code>User</code>, <code>Role</code>,
+<code>APIToken</code>) couvrent l’exploitation, le suivi des jobs et la
+sécurité.</p>
+<h3 id="les-jobs-planifiés-trois-leçons-sur-la-concurrence">Les jobs
+planifiés : trois leçons sur la concurrence</h3>
+<p>Cette architecture a été mise à l’épreuve par les jobs planifiés.
+APScheduler exécute chaque tâche périodique — synchronisation par
+source, purge à 2 h, nettoyage de la corbeille à 3 h, rapport de
+conformité à 8 h — dans un thread séparé du processus Flask. Cette
+cohabitation entre threads de fond et requêtes web m’a confronté à trois
+problèmes successifs.</p>
+<p>Le premier est apparu dès le premier essai :
+<code>RuntimeError: Working outside of application context</code>. Le
+même code de service fonctionnait parfaitement appelé depuis une route
+web, et plantait systématiquement appelé par le scheduler. En lisant la
+documentation de Flask, j’ai compris que la configuration et la session
+de base de données sont attachées à un <em>contexte d’application</em>
+que les requêtes web reçoivent automatiquement — mais pas les threads
+créés par APScheduler. La correction consiste à envelopper le corps de
+chaque job dans <code>with app.app_context():</code>
+(<code>app/scheduler/tasks.py</code>). Une ligne, mais elle m’a obligé à
+comprendre comment Flask isole réellement ses requêtes, ce que l’usage
+habituel du framework masque complètement.</p>
+<p>Le deuxième problème était un chevauchement. En testant avec une
+fréquence de synchronisation volontairement courte (une minute) et une
+source lente, le job suivant démarrait avant la fin du précédent : deux
+threads synchronisaient la même source en parallèle, avec des écritures
+concurrentes sur les mêmes lignes en base. APScheduler fournit
+exactement les garde-fous nécessaires : <code>max_instances=1</code>
+interdit deux exécutions simultanées du même job, et
+<code>misfire_grace_time=60</code> autorise un déclenchement en retard
+plutôt qu’une exécution de rattrapage en rafale. J’ai aussi ajouté une
+garde <code>if _scheduler.running: return</code> au démarrage, après
+avoir constaté en développement que le rechargeur automatique de Flask
+créait deux processus — et donc deux schedulers exécutant chaque
+synchronisation en double.</p>
+<p>Le troisième touchait SQLite. Lors des premiers tests avec une
+synchronisation planifiée active et l’interface ouverte en parallèle,
+certaines requêtes échouaient avec
+<code>sqlite3.OperationalError: database is locked</code> : le thread du
+scheduler écrivait pendant qu’une requête web lisait. Plutôt que de
+remettre en cause le choix de SQLite (section II.1), j’ai activé le mode
+WAL à l’ouverture de chaque connexion
+(<code>PRAGMA journal_mode=WAL</code> dans
+<code>app/__init__.py</code>). Dans ce mode, l’écriture se fait dans un
+journal séparé et ne bloque plus les lectures — ce qui correspond
+exactement à notre profil d’usage : des écritures occasionnelles (les
+jobs), des lectures fréquentes (l’interface).</p>
+<p>Ces fondations posées — couches séparées, jobs maîtrisés, base
+fiabilisée —, le cœur fonctionnel restait à construire : la collecte des
+documents elle-même.</p>
 <h2 id="ii.3-sources-et-synchronisation">II.3 Sources et
 synchronisation</h2>
 <p>Une source décrit l’origine des PDF : protocole (<code>sftp</code>,
@@ -567,77 +564,156 @@ propriétés Python <code>login</code> et <code>mot_de_passe</code> de
 <code>Source</code> ; les colonnes physiques en base stockent les
 valeurs chiffrées par Fernet.</p>
 <p>Le service <code>app/services/sync_service.py</code> applique la même
-logique à tous les protocoles :</p>
-<ol type="1">
-<li>Sélection du connecteur selon le protocole
-(<code>_get_connector</code>).</li>
-<li>Inventaire des fichiers distants correspondant au filtre glob.</li>
-<li>Pour chaque fichier : nettoyage du nom, téléchargement vers un
-fichier temporaire, calcul du hash SHA-256.</li>
-<li>Comparaison avec le hash stocké en base : le fichier final est
-remplacé uniquement si le contenu a changé.</li>
-<li>Journalisation du résultat (succès, inchangé, erreur).</li>
-</ol>
-<p>L’écriture via fichier temporaire est importante : elle évite qu’une
-erreur réseau en milieu de transfert ne produise un fichier PDF
-partiellement écrit qui serait servi à l’utilisateur.</p>
-<p>La figure 4 résume la chaîne de synchronisation : inventaire, hash de
-contrôle, filtrage de doublon, écriture contrôlée, journalisation.</p>
+logique à tous les protocoles : seul le connecteur (inventaire et
+téléchargement) change. Cette partie est celle qui a connu le plus
+d’itérations pendant le stage, et c’est en la racontant dans l’ordre
+qu’on comprend le mieux sa forme finale.</p>
+<p><strong>Première version : correcte mais inutilisable.</strong> Ma
+première implémentation était directe : télécharger chaque fichier
+distant, calculer son hash SHA-256, le comparer à celui stocké en base,
+et ne remplacer la copie locale que si le contenu avait changé.
+Fonctionnellement, rien à redire. Mais en testant avec une source d’une
+centaine de PDF, chaque synchronisation re-téléchargeait l’intégralité
+des fichiers — y compris ceux inchangés depuis des semaines — car il
+faut posséder un fichier pour le hacher. La déduplication arrivait trop
+tard dans la chaîne. Face à l’objectif du cahier des charges (500 PDF en
+moins de 5 minutes) et à des sources accessibles via le réseau
+hospitalier, cette approche ne tenait pas.</p>
+<p><strong>Deuxième version : déduplication à deux niveaux.</strong> La
+solution a été d’exploiter les métadonnées que les protocoles SFTP et
+SMB fournissent gratuitement à l’inventaire, avant tout téléchargement :
+la taille et la date de modification. Si les deux correspondent à ce qui
+est enregistré en base, le fichier est ignoré d’emblée. Le hash SHA-256
+ne sert plus qu’en confirmation après téléchargement, pour éviter une
+écriture inutile quand un fichier a été re-daté sans être modifié (ce
+qui arrive, par exemple, après une copie de dossier côté serveur). Le
+coût réseau d’une synchronisation devient ainsi proportionnel à ce qui a
+<em>changé</em>, et non à la taille totale de la source.</p>
+<p><strong>Le bug des deux secondes.</strong> Ce pré-filtre a
+immédiatement fait apparaître un bug déroutant : certains fichiers —
+toujours les mêmes — étaient re-téléchargés à chaque synchronisation
+alors qu’ils n’avaient pas changé. En journalisant les dates comparées,
+j’ai constaté des écarts d’une seconde entre la date stockée en base et
+la date annoncée par le serveur. L’explication m’a demandé quelques
+recherches : plusieurs systèmes de fichiers et serveurs SMB stockent les
+dates de modification avec une granularité de deux secondes ; la date
+est arrondie, et l’arrondi peut différer entre ce que le serveur annonce
+et ce que l’on a enregistré. Ma comparaison stricte échouait donc en
+permanence pour ces fichiers. La correction tient en une condition :
+tolérer un écart inférieur à deux secondes.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># sync_service.py — pré-filtre avant téléchargement (simplifié)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> doc <span class="kw">and</span> doc.taille_octets <span class="op">==</span> f_distant.taille:</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    doc_mtime <span class="op">=</span> _as_utc(doc.date_modification_source)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> doc_mtime:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        ecart <span class="op">=</span> <span class="bu">abs</span>((doc_mtime <span class="op">-</span> f_distant.date_modification).total_seconds())</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> ecart <span class="op">&lt;</span> <span class="dv">2</span>:  <span class="co"># tolérance : granularité des dates SMB/FAT</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="st">&quot;ignore&quot;</span>  <span class="co"># métadonnées identiques : pas de téléchargement</span></span></code></pre></div>
+<p><strong>Les fuseaux horaires.</strong> En branchant le connecteur
+SFTP, la comparaison ci-dessus a levé une erreur que je ne connaissais
+pas :
+<code>TypeError: can't subtract offset-naive and offset-aware datetimes</code>.
+Paramiko renvoie des dates « naïves » (sans information de fuseau
+horaire), alors que l’application travaille avec des dates UTC « aware »
+; Python refuse de soustraire les deux, et c’est une bonne chose — le
+résultat serait ambigu. J’ai adopté une règle simple pour tout le projet
+: toutes les dates sont stockées et comparées en UTC, la conversion vers
+l’heure locale n’intervient qu’à l’affichage. Un petit utilitaire
+normalise les dates entrantes :</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _as_utc(dt: datetime <span class="op">|</span> <span class="va">None</span>) <span class="op">-&gt;</span> datetime <span class="op">|</span> <span class="va">None</span>:</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dt <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> dt <span class="cf">if</span> dt.tzinfo <span class="cf">else</span> dt.replace(tzinfo<span class="op">=</span>timezone.utc)</span></code></pre></div>
+<p><strong>Écriture contrôlée.</strong> Le téléchargement passe par un
+fichier temporaire créé dans le dossier cible, déplacé vers son nom
+définitif seulement une fois complet, et supprimé en cas d’exception.
+Sans cette précaution, une coupure réseau en milieu de transfert
+laisserait un PDF tronqué qui serait servi tel quel à l’utilisateur —
+précisément le genre de défaillance silencieuse qu’un outil de
+continuité d’activité ne peut pas se permettre. Le calcul du hash
+lui-même lit le fichier par blocs de 64 Ko plutôt qu’en une fois :
+certains PDF de procédures sont des scans de plusieurs dizaines de
+mégaoctets, et <code>sha256(f.read())</code> aurait chargé chacun
+intégralement en mémoire.</p>
+<p>La figure 3 résume la chaîne complète : inventaire, sécurisation du
+nom, les deux niveaux de déduplication, écriture contrôlée et
+journalisation de chaque issue (copié, ignoré, erreur).</p>
 <figure>
 <img src="images/schema-flux-synchronisation.png" style="width:100.0%"
-alt="Figure 4 : Flux de synchronisation d’un document PDF : de la détection à l’écriture contrôlée." />
-<figcaption aria-hidden="true">Figure 4 : Flux de synchronisation d’un
-document PDF : de la détection à l’écriture contrôlée.</figcaption>
+alt="Figure 3 : Flux de synchronisation d’un document PDF : déduplication à deux niveaux et écriture contrôlée." />
+<figcaption aria-hidden="true">Figure 3 : Flux de synchronisation d’un
+document PDF : déduplication à deux niveaux et écriture
+contrôlée.</figcaption>
 </figure>
-<p>Le point le plus sensible de cette partie concerne les noms de
-fichiers. Un nom distant ne peut pas être utilisé tel quel : un fichier
-nommé <code>../secret.pdf</code> sur un serveur SFTP doit être refusé
-avant tout stockage local. Cette règle est traitée dans
-<code>app/utils/files.py</code> par confinement avec
-<code>realpath</code> et <code>commonpath</code>. Elle s’applique à la
-synchronisation, au téléchargement, au ZIP, à la purge et à la
-restauration depuis la corbeille.</p>
+<p><strong>Les noms de fichiers, une entrée comme une autre.</strong> Le
+point le plus sensible de cette chaîne concerne les noms de fichiers
+distants. Un nom ne peut pas être utilisé tel quel : un fichier nommé
+<code>../secret.pdf</code> sur un serveur compromis doit être refusé
+avant tout stockage local. Ma première protection s’appuyait sur
+<code>os.path.basename()</code> pour ne conserver que le nom — jusqu’à
+ce qu’un test m’apprenne que sous Linux, <code>basename</code> ne coupe
+que sur les <code>/</code> : un nom contenant des antislashs Windows
+(<code>..\..\fichier.pdf</code>), tout à fait plausible venant d’un
+serveur SMB, traversait le filtre intact. La fonction
+<code>nom_fichier_sur()</code> (<code>app/utils/files.py</code>)
+normalise donc d’abord les <code>\</code> en <code>/</code> avant
+d’extraire le nom, et le confinement par <code>realpath</code> +
+<code>commonpath</code> vérifie en seconde ligne de défense que le
+chemin final reste bien sous le répertoire de stockage. Cette double
+vérification s’applique partout où un chemin est manipulé :
+synchronisation, téléchargement, ZIP, purge et restauration depuis la
+corbeille.</p>
+<p>La synchronisation répond à la question « comment collecter
+efficacement ». Restait la question symétrique, tout aussi importante
+pour la DSI : que deviennent les documents qui vieillissent ?</p>
 <h2 id="ii.4-fraîcheur-purge-et-corbeille">II.4 Fraîcheur, purge et
 corbeille</h2>
-<p>Chaque document porte un statut calculé à partir de son âge
-(différence entre la date de collecte et aujourd’hui) et des seuils
-configurés sur sa source : <code>ok</code>, <code>avertissement</code>,
-<code>critique</code>, <code>purge</code>. Ces seuils sont paramétrables
-par source, ce qui permet d’appliquer des politiques différentes selon
-la criticité des documents.</p>
-<p>La purge ne supprime pas immédiatement les fichiers. Quand un
-document dépasse son seuil de rétention, il est déplacé vers
+<p>Chaque document porte un statut calculé à partir de son âge et des
+seuils configurés sur sa source. La progression est intentionnellement
+graduelle : <code>ok</code> (document récent),
+<code>avertissement</code> (à surveiller), <code>critique</code> (action
+requise), puis <code>purge</code> (rétention dépassée). Cette
+dégradation laisse du temps pour réagir avant qu’un document ne
+disparaisse. Les seuils sont paramétrables par source, ce qui permet
+d’appliquer des politiques différentes selon la criticité des procédures
+concernées.</p>
+<p>La suppression elle-même n’est jamais immédiate. Quand un document
+dépasse son seuil de rétention, il est déplacé vers
 <code>_corbeille</code> et son statut passe à <code>PURGE</code>. Un
-nettoyage définitif supprime ensuite les fichiers de la corbeille après
-la durée <code>CORBEILLE_RETENTION_JOURS</code>. Ce fonctionnement en
-deux temps limite le risque d’erreur irréversible.</p>
+nettoyage définitif intervient ensuite après la durée
+<code>CORBEILLE_RETENTION_JOURS</code>. Ce fonctionnement en deux temps
+limite le risque d’erreur irréversible en cas de mauvais paramétrage. La
+figure 4 illustre l’ensemble de ce cycle de vie et les seuils de
+transition.</p>
 <figure>
 <img src="images/schema-purge-corbeille.png" style="width:100.0%"
-alt="Figure 6 : Cycle de vie d’un document PDF : états de fraîcheur, transitions et chronologie de purge." />
-<figcaption aria-hidden="true">Figure 6 : Cycle de vie d’un document PDF
+alt="Figure 4 : Cycle de vie d’un document PDF : états de fraîcheur, transitions et chronologie de purge." />
+<figcaption aria-hidden="true">Figure 4 : Cycle de vie d’un document PDF
 : états de fraîcheur, transitions et chronologie de purge.</figcaption>
 </figure>
+<p>Ces mécanismes tournent en arrière-plan ; pour l’utilisateur, ils se
+résument à un badge de couleur sur chaque document. C’est l’interface
+web qui rend ce travail visible.</p>
 <h2 id="ii.5-interface-web-et-parcours-utilisateur">II.5 Interface web
 et parcours utilisateur</h2>
 <p>L’interface est rendue côté serveur avec Jinja2 et Bootstrap 5. Ce
-choix évite un frontend JavaScript complexe pour des écrans de gestion
-interne. L’interface couvre la connexion, le tableau de bord, la gestion
-des sources, la synchronisation, la consultation des documents, les
-journaux et l’administration.</p>
-<p>Le tableau de bord, visible en figure 5, affiche les indicateurs
-utiles à l’exploitation : nombre de documents, sources actives, dernière
-synchronisation, espace utilisé, activité récente et répartition par
-source.</p>
-<figure>
-<img src="images/ui-dashboard.png" style="width:100.0%"
-alt="Figure 5 : Tableau de bord : indicateurs clés et activité récente." />
-<figcaption aria-hidden="true">Figure 5 : Tableau de bord : indicateurs
-clés et activité récente.</figcaption>
-</figure>
+choix a une raison pratique : un développeur Python de la DSI doit
+pouvoir maintenir l’interface sans maîtriser un framework JavaScript.
+Les écrans de gestion interne n’exigent pas de réactivité temps réel.
+L’interface couvre la connexion, le tableau de bord, la gestion des
+sources, la synchronisation, la consultation des documents, les journaux
+et l’administration.</p>
+<p>Le tableau de bord affiche les indicateurs utiles à l’exploitation :
+nombre de documents, sources actives, dernière synchronisation, espace
+utilisé, activité récente et répartition par source.</p>
 <p>L’export ZIP est limité à 100 documents et 500 Mo. Ce plafond évite
 de générer depuis l’interface une réponse HTTP trop volumineuse, qui
 pourrait saturer la mémoire du serveur ou la connexion de
 l’utilisateur.</p>
+<p>L’interface couvre l’usage humain. Pour les usages programmatiques —
+supervision par les outils de la DSI, scripts d’exploitation —,
+l’application expose une API REST.</p>
 <h2 id="ii.6-api-rest">II.6 API REST</h2>
 <p>L’API v1 est définie dans <code>app/routes/api.py</code> et
 documentée via OpenAPI dans <code>app/api/openapi.py</code>. Elle expose
@@ -645,132 +721,108 @@ un healthcheck public, des statistiques agrégées, la liste et le détail
 des sources, le déclenchement d’une synchronisation, le statut d’un job
 de fond, la liste et le détail des documents, ainsi que le
 téléchargement d’un document.</p>
-<p>L’API n’est pas un CRUD complet : la création et la suppression de
-sources passent par l’interface web. Les décorateurs dans
-<code>app/utils/decorators.py</code> et les tests dans
-<code>tests/test_api_permissions.py</code> vérifient que les deux modes
-d’accès (session web et token Bearer) utilisent les mêmes règles de
-permissions.</p>
-<figure>
-<img src="images/schema-api-rest.png" style="width:100.0%"
-alt="Figure 10 : Vue d’ensemble des endpoints API REST v1 : routes, méthodes HTTP et authentification." />
-<figcaption aria-hidden="true">Figure 10 : Vue d’ensemble des endpoints
-API REST v1 : routes, méthodes HTTP et authentification.</figcaption>
-</figure>
-<p>Un exemple de requête API :</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Lister les sources (token Bearer)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;token&gt;&quot;</span> http://localhost:5000/api/v1/sources</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Déclencher une synchronisation</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-X</span> POST <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;token&gt;&quot;</span> <span class="dt">\</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>     http://localhost:5000/api/v1/sources/1/sync</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Vérifier le statut du job</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;token&gt;&quot;</span> <span class="dt">\</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>     http://localhost:5000/api/v1/jobs/<span class="op">&lt;</span>job-id<span class="op">&gt;</span></span></code></pre></div>
+<p>L’API n’est pas un CRUD complet — et c’est un choix délibéré. La
+création et la suppression de sources sont des opérations rares,
+réalisées par des administrateurs qui bénéficient des confirmations
+visuelles de l’interface web. L’API se concentre sur la consultation et
+le suivi, les vrais cas d’usage fréquents pour un outil de monitoring
+externe. Les décorateurs dans <code>app/utils/decorators.py</code> et
+les tests dans <code>tests/test_api_permissions.py</code> garantissent
+que les deux modes d’accès (session web et token Bearer) appliquent les
+mêmes règles de permissions, sans divergence silencieuse.</p>
+<p>Un exemple d’usage typique — déclencher une synchronisation puis
+suivre son job :</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-X</span> POST <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;token&gt;&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>     http://localhost:5000/api/v1/sources/1/sync</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;token&gt;&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>     http://localhost:5000/api/v1/jobs/<span class="op">&lt;</span>job-id<span class="op">&gt;</span></span></code></pre></div>
 <h2 id="ii.7-sécurité">II.7 Sécurité</h2>
 <p>La sécurité de StageSarcophage repose sur plusieurs contrôles
 complémentaires. Aucun d’eux ne suffit seul ; l’objectif est de limiter
 la surface d’attaque sur les accès web, l’API, les fichiers et les
-exports.</p>
-<figure>
-<img src="images/schema-securite-acces.png" style="width:100.0%"
-alt="Figure 7 : Architecture de sécurité : défense en profondeur, 7 couches de contrôles superposés." />
-<figcaption aria-hidden="true">Figure 7 : Architecture de sécurité :
-défense en profondeur, 7 couches de contrôles superposés.</figcaption>
-</figure>
-<p><strong>Authentification et sessions</strong> : l’interface web
-utilise Flask-Login avec sessions côté serveur. Les mots de passe sont
-hachés avec bcrypt (coût 12). Les routes protégées vérifient les
-permissions via des décorateurs (<code>@require_permission</code>) : un
+exports. Les contrôles peuvent être regroupés par type de menace.</p>
+<p><strong>Contre l’usurpation d’identité</strong> : Flask-Login gère
+les sessions côté serveur, avec mots de passe hachés en bcrypt (coût 12)
+et décorateurs <code>@require_permission</code> sur les routes
+sensibles. Les tokens Bearer sont stockés hachés en base, révocables
+immédiatement, et peuvent porter des permissions restreintes. Un
 utilisateur peut avoir le rôle “Opérateur” sans avoir la permission de
 supprimer des sources.</p>
-<p><strong>Tokens API</strong> : les tokens Bearer sont stockés hachés
-en base, pas en clair. Leur révocation est immédiate. Chaque token peut
-porter des permissions restreintes.</p>
-<p><strong>Protection des formulaires</strong> : Flask-WTF fournit des
-jetons CSRF sur tous les formulaires modifiants. Un attaquant ne peut
-donc pas déclencher une action depuis un autre site en s’appuyant
-uniquement sur la session ouverte d’un utilisateur.</p>
-<p><strong>Headers HTTP</strong> : <code>app/__init__.py</code> pose les
-en-têtes <code>X-Content-Type-Options: nosniff</code>,
-<code>X-Frame-Options: SAMEORIGIN</code>, une politique de referrer, une
-permissions policy et une Content Security Policy (CSP) avec nonce
-dynamique sur les scripts. Ces en-têtes réduisent les vecteurs XSS et
-clickjacking.</p>
-<p><strong>Chiffrement des identifiants</strong> : les identifiants des
-sources (login, mot de passe) sont chiffrés avec Fernet avant stockage.
-La clé de chiffrement (<code>ENCRYPTION_KEY</code>) est séparée de la
-clé de session (<code>SECRET_KEY</code>) et doit rester dans le fichier
-<code>.env</code> avec permissions restrictives
-(<code>chmod 600</code>).</p>
-<p><strong>Confinement des chemins</strong> :
+<p><strong>Contre les attaques par le navigateur</strong> : Flask-WTF
+pose des jetons CSRF sur tous les formulaires modifiants, ce qui empêche
+un attaquant de déclencher une action en s’appuyant sur la session
+ouverte d’un utilisateur. Les en-têtes HTTP
+(<code>X-Content-Type-Options: nosniff</code>,
+<code>X-Frame-Options: SAMEORIGIN</code>, CSP avec nonce dynamique sur
+les scripts) réduisent les vecteurs XSS et clickjacking.</p>
+<p>La mise en place de la CSP a d’ailleurs été instructive : en
+l’activant, l’interface a cessé de fonctionner. Les quelques scripts
+inline des templates étaient bloqués exactement comme l’aurait été un
+script injecté par un attaquant — comportement attendu, puisque la CSP
+ne distingue pas le code légitime du code injecté : elle exige que le
+code légitime soit identifiable. Chaque réponse génère donc un nonce
+aléatoire, placé à la fois dans l’en-tête CSP et dans les balises
+<code>&lt;script&gt;</code> des templates ; un script dépourvu du nonce
+de la requête en cours est refusé par le navigateur.</p>
+<p><strong>Contre les attaques par le système de fichiers</strong> : les
+identifiants des sources sont chiffrés avec Fernet avant stockage — la
+clé (<code>ENCRYPTION_KEY</code>) reste séparée de la clé de session et
+protégée avec <code>chmod 600</code>. Le confinement des chemins dans
 <code>app/utils/files.py</code> utilise <code>os.path.realpath</code> et
-<code>os.path.commonpath</code> pour vérifier que tout chemin demandé
-reste sous le répertoire de stockage autorisé. Cette vérification est
-plus robuste qu’un simple remplacement de <code>../</code>, car elle
-résout les liens symboliques et gère les chemins absolus.</p>
-<p><strong>Sanitisation des exports</strong> : les exports CSV/XLSX
-neutralisent les valeurs commençant par <code>=</code>, <code>+</code>,
-<code>-</code> ou <code>@</code> pour éviter les injections de formules
-tableur. Les notifications et rapports HTML échappent systématiquement
-les contenus insérés.</p>
+<code>os.path.commonpath</code> pour garantir que tout chemin demandé
+reste sous le répertoire autorisé, y compris face aux liens symboliques
+ou aux chemins absolus injectés.</p>
+<p><strong>Contre les injections de formules</strong> : les exports
+CSV/XLSX neutralisent les valeurs commençant par <code>=</code>,
+<code>+</code>, <code>-</code> ou <code>@</code>. Les notifications et
+rapports HTML échappent systématiquement les contenus insérés.</p>
 <h2 id="ii.8-tests-et-qualité">II.8 Tests et qualité</h2>
-<p>La commande <code>make check</code> orchestre : Ruff (linter Python),
-pytest avec couverture, Bandit (analyse statique de sécurité),
-<code>pip-audit</code> (vulnérabilités des dépendances), un scan de
-secrets suivis par Git et une vérification des permissions du fichier
-<code>.env</code>.</p>
-<p>Les vingt fichiers de tests couvrent les modèles, la synchronisation,
-la purge, les sources, les permissions API et web, la sécurité
-(traversée de chemin, injections), LDAP, SFTP, SMB, les exports, les
-notifications et les templates.</p>
-<p>Les tests utilisent SQLite en mémoire et un stockage temporaire. Ils
-restent ainsi rapides et reproductibles en CI. En revanche, ils ne
-prouvent pas la compatibilité avec tous les comportements possibles de
-serveurs SFTP, SMB, LDAP ou SMTP réels.</p>
-<p>Le mode <code>JOBS_RUN_INLINE=true</code> exécute les jobs de fond de
-façon synchrone pendant les tests. Les assertions sur les états finaux
-deviennent alors déterministes.</p>
-<figure>
-<img src="images/schema-pipeline-qualite.png" style="width:100.0%"
-alt="Figure 12 : Pipeline de qualité make check : 6 étapes et couverture des 20 fichiers de tests." />
-<figcaption aria-hidden="true">Figure 12 : Pipeline de qualité make
-check : 6 étapes et couverture des 20 fichiers de tests.</figcaption>
-</figure>
+<p>La stratégie de test a privilégié la rapidité et la reproductibilité.
+Les tests utilisent SQLite en mémoire et un stockage temporaire ; le
+mode <code>JOBS_RUN_INLINE=true</code> exécute les jobs de fond de façon
+synchrone. Ce mode est né d’un problème concret : mes premiers tests de
+synchronisation échouaient par intermittence, selon que le thread du job
+avait terminé ou non au moment de l’assertion. Plutôt que d’ajouter des
+attentes arbitraires (<code>sleep</code>) qui ralentissent la suite sans
+vraiment la fiabiliser, j’ai introduit ce mode qui exécute les jobs en
+ligne pendant les tests : les assertions deviennent déterministes.
+Résultat : une suite qui tourne en quelques secondes en CI, sur les
+vingt fichiers couvrant les modèles, la synchronisation, la purge, les
+sources, les permissions API et web, la sécurité (traversée de chemin,
+injections), LDAP, SFTP, SMB, les exports, les notifications et les
+templates.</p>
+<p>La contrepartie est connue : ces tests ne prouvent pas la
+compatibilité avec les comportements réels de serveurs SFTP, SMB, LDAP
+ou SMTP. Une recette sur infrastructure réelle reste indispensable avant
+tout déploiement.</p>
+<p>La commande <code>make check</code> orchestre l’ensemble : Ruff
+(linter Python), pytest avec couverture, Bandit (analyse statique de
+sécurité), <code>pip-audit</code> (vulnérabilités des dépendances), un
+scan de secrets suivis par Git et une vérification des permissions du
+fichier <code>.env</code>.</p>
 <h2 id="ii.9-déploiement-et-exploitation">II.9 Déploiement et
 exploitation</h2>
 <p>Le dépôt contient un <code>Dockerfile</code>, un
 <code>docker-compose.yml</code>, un <code>entrypoint.sh</code> et les
 commandes Flask nécessaires à l’initialisation de la base.</p>
 <p>Variables minimales requises en production :</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">SECRET_KEY</span><span class="op">=&lt;</span>valeur <span class="ex">aléatoire</span> 32 octets<span class="op">&gt;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">ENCRYPTION_KEY</span><span class="op">=&lt;</span>clé <span class="ex">Fernet</span> générée<span class="op">&gt;</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">STORAGE_DIR</span><span class="op">=</span>/chemin/vers/stockage</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="va">FLASK_ENV</span><span class="op">=</span>production</span></code></pre></div>
-<p>L’application peut être lancée localement ou via Docker :</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Local</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/flask</span> <span class="at">--app</span> run.py init-db</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/flask</span> <span class="at">--app</span> run.py create-admin <span class="at">--username</span> admin <span class="at">--password</span> <span class="op">&lt;</span>mot_de_passe<span class="op">&gt;</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/flask</span> <span class="at">--app</span> run.py run <span class="at">--host</span> 0.0.0.0 <span class="at">--port</span> 5000</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Docker</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose build <span class="kw">&amp;&amp;</span> <span class="ex">docker</span> compose up <span class="at">-d</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose exec web flask init-db</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose exec web flask create-admin <span class="at">--username</span> admin <span class="at">--password</span> <span class="op">&lt;</span>mot_de_passe<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">SECRET_KEY</span><span class="op">=&lt;</span>valeur <span class="ex">aléatoire</span> 32 octets<span class="op">&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">ENCRYPTION_KEY</span><span class="op">=&lt;</span>clé <span class="ex">Fernet</span> générée<span class="op">&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">STORAGE_DIR</span><span class="op">=</span>/chemin/vers/stockage</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">FLASK_ENV</span><span class="op">=</span>production</span></code></pre></div>
+<p>Le déploiement cible passe par Docker (le lancement local hors
+conteneur est décrit dans le README) :</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose build <span class="kw">&amp;&amp;</span> <span class="ex">docker</span> compose up <span class="at">-d</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose exec web flask init-db</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose exec web flask create-admin <span class="at">--username</span> admin <span class="at">--password</span> <span class="op">&lt;</span>mot_de_passe<span class="op">&gt;</span></span></code></pre></div>
 <p>Les jobs de fond s’exécutent dans un <code>ThreadPoolExecutor</code>
 interne. Un redémarrage du processus pendant une synchronisation peut
-nécessiter un déclenchement manuel. L’exploitant doit être informé de
-cette limite.</p>
-<figure>
-<img src="images/schema-deploiement.png" style="width:100.0%"
-alt="Figure 8 : Architecture de déploiement : Docker, Gunicorn, volumes persistants et sources externes." />
-<figcaption aria-hidden="true">Figure 8 : Architecture de déploiement :
-Docker, Gunicorn, volumes persistants et sources externes.</figcaption>
-</figure>
+laisser un job inachevé ; dans ce cas, un déclenchement manuel est
+nécessaire. C’est une limite connue et documentée — l’exploitant doit en
+être informé lors de la prise en main.</p>
 <div class="page-break">
 
 </div>
@@ -781,193 +833,167 @@ perspectives</h1>
 une application web interne, conteneurisable, qui collecte des PDF
 depuis des sources SFTP, SMB et locales, calcule leur fraîcheur, permet
 leur consultation et trace les opérations.</p>
-<p>Les fonctionnalités livrées couvrent la gestion des sources, la
-synchronisation avec déduplication SHA-256, la consultation (interface
-web, viewer PDF, export ZIP), la sécurité (CSRF, CSP, Fernet, RBAC,
-confinement de chemins) et l’API REST. LDAP et SMTP sont configurables,
-mais ils n’ont pas été validés sur infrastructure réelle. Le benchmark
-500 PDF reste aussi à prouver. Le projet est documenté pour permettre
-une reprise par la DSI.</p>
+<p>Sur les exigences du cahier des charges, l’essentiel est livré et
+validé par les tests : gestion des sources, synchronisation avec
+déduplication SHA-256, consultation (interface web, viewer PDF, export
+ZIP), sécurité (CSRF, CSP, Fernet, RBAC, confinement de chemins) et API
+REST. Deux points restent partiels : la purge est fonctionnelle mais
+certains paramètres avancés n’ont pas été démontrés en recette ; l’API
+ne couvre pas le CRUD des sources. Trois points restent à valider sur
+infrastructure réelle : LDAP, SMTP, et le benchmark de performance à 500
+PDF. Le projet est documenté pour permettre une reprise par la DSI sans
+dépendre de ma présence.</p>
 <h2 id="iii.2-perspectives-et-évolutions">III.2 Perspectives et
 évolutions</h2>
-<p>Priorité haute : valider les connecteurs sur infrastructure réelle
-(SFTP, SMB, LDAP, SMTP) et mesurer le benchmark 500 PDF en moins de 5
-minutes avec un jeu de fichiers représentatif.</p>
-<p>Priorité moyenne : ajouter le CRUD des sources dans l’API REST (avec
-une politique d’autorisation à préciser) ; mettre en place une
-sauvegarde automatique de la base SQLite, du stockage PDF et du fichier
-<code>.env</code>.</p>
-<p>Priorité basse : envisager une migration PostgreSQL si les accès
-concurrents l’exigent ; faire réaliser un audit de sécurité externe une
-fois le périmètre de production figé.</p>
-<div class="page-break">
-
-</div>
-<h1 id="accompagnement-du-csu-lors-des-interventions">Accompagnement du
-CSU lors des interventions</h1>
+<p><strong>Priorité haute</strong> : valider les connecteurs sur
+infrastructure réelle (SFTP, SMB, LDAP, SMTP) et mesurer le benchmark
+500 PDF en moins de 5 minutes avec un jeu de fichiers représentatif.
+C’est le prérequis à toute mise en service.</p>
+<p><strong>Priorité moyenne</strong> : ajouter le CRUD des sources dans
+l’API REST (avec une politique d’autorisation à préciser) ; mettre en
+place une sauvegarde automatique de la base SQLite, du stockage PDF et
+du fichier <code>.env</code>.</p>
+<p><strong>Priorité basse</strong> : envisager une migration PostgreSQL
+si les accès concurrents l’exigent ; faire réaliser un audit de sécurité
+externe une fois le périmètre de production figé.</p>
+<h2 id="iii.3-accompagnement-du-csu-lors-des-interventions">III.3
+Accompagnement du CSU lors des interventions</h2>
 <p>En plus du développement de StageSarcophage, j’ai accompagné des
-membres de la Cellule de Support aux Utilisateurs (CSU) du Centre
-Antoine Lacassagne lors d’interventions dans plusieurs services. Cette
-partie du stage m’a donné une vision directe du support informatique
-hospitalier et des contraintes de continuité de service que
-l’application devait traiter.</p>
-<p>Les interventions du CSU se répartissaient en deux catégories :</p>
-<ul>
-<li><strong>Interventions sur site</strong> : déplacements dans les
-services de l’établissement (bloc opératoire, urgences, unités
-d’hospitalisation, services administratifs) pour résoudre des incidents
-qui nécessitaient une présence physique : matériel, configuration poste,
-imprimante ou panne logicielle plus complexe.</li>
-<li><strong>Interventions à distance</strong> : assistance téléphonique
-ou prise en main à distance pour guider le personnel soignant ou
-administratif sans déplacement. Ce format permettait de traiter
-rapidement les incidents simples et de réserver les déplacements aux cas
-plus bloquants.</li>
-</ul>
-<p>Les interventions concernaient aussi bien le personnel soignant que
-les équipes administratives de l’établissement.</p>
-<h2 id="notions-abordées">Notions abordées</h2>
-<p>Ces accompagnements ont abordé des sujets techniques et
-organisationnels que je n’aurais pas vus uniquement en développant
-l’application.</p>
-<h3 id="environnement-informatique-hospitalier">Environnement
-informatique hospitalier</h3>
-<p>Le parc informatique du Centre Antoine Lacassagne diffère d’un
-environnement d’entreprise classique. De nombreux postes sont partagés
-entre plusieurs utilisateurs, soumis à des politiques de sécurité
-strictes et utilisés dans des services où l’indisponibilité se ressent
-immédiatement. J’ai pu observer et participer à plusieurs types
-d’opérations :</p>
-<ul>
-<li>Configuration et dépannage de postes soumis à des politiques de
-sécurité strictes, avec une attention particulière aux sessions
-utilisateur sur postes partagés.</li>
-<li>Gestion des droits d’accès aux ressources réseau et aux applications
-métier, notamment le dossier patient informatisé (DPI) et les outils de
-prescription médicale, avec des accès contrôlés par profil et par
-service.</li>
-<li>Paramétrage et résolution d’incidents sur les imprimantes et
-périphériques utilisés dans les unités de soins.</li>
-<li>Vérification et rétablissement de la connectivité réseau dans les
-services, car une panne réseau peut bloquer simultanément plusieurs
-outils numériques.</li>
-</ul>
-<p>Ces interventions montrent bien la tension propre à un parc
-informatique hospitalier : la sécurité doit rester stricte, mais l’usage
-doit rester simple pour des personnels dont l’informatique n’est pas le
-métier principal. Un blocage banal sur un poste ou une imprimante peut
-avoir un effet immédiat sur l’organisation d’un service.</p>
+membres de la Cellule de Support aux Utilisateurs (CSU) lors
+d’interventions dans plusieurs services — sur site (bloc opératoire,
+urgences, unités d’hospitalisation, services administratifs) quand une
+présence physique était nécessaire, à distance pour les incidents
+simples. Cette seconde mission m’a donné une vision directe du terrain
+que l’application devait servir.</p>
+<p>Le parc informatique hospitalier diffère d’un environnement
+d’entreprise classique : postes partagés entre plusieurs utilisateurs,
+politiques de sécurité strictes, accès aux applications métier (dossier
+patient informatisé, outils de prescription) contrôlés par profil et par
+service. J’ai participé à des dépannages de postes, des gestions de
+droits d’accès, des incidents d’impression et des rétablissements de
+connectivité réseau. La tension y est permanente : la sécurité doit
+rester stricte, mais l’usage doit rester simple pour des personnels dont
+l’informatique n’est pas le métier — un blocage banal sur un poste ou
+une imprimante peut désorganiser un service entier.</p>
 <h3 id="continuité-de-service-en-milieu-hospitalier">Continuité de
 service en milieu hospitalier</h3>
 <p>Le contexte hospitalier se distingue surtout par la continuité de
-service. Contrairement à un environnement d’entreprise standard, une
-panne informatique dans un service de soins peut perturber directement
-la prise en charge des patients. Les interventions du CSU prennent donc
-souvent un caractère urgent.</p>
-<p>Ces accompagnements ont rendu le besoin de StageSarcophage plus
-concret. Les modes dégradés ne sont pas une formalité documentaire : ils
-servent quand un outil numérique n’est plus disponible, par exemple
-après une panne du dossier patient, une indisponibilité du système de
-prescription ou une coupure réseau. Lors d’une intervention, j’ai vu une
-unité revenir à des formulaires papier à cause d’une indisponibilité
-temporaire des outils de prescription. L’application cherche à sécuriser
-ce scénario en donnant un accès fiable, centralisé et à jour aux
-documents de modes dégradés.</p>
+service : une panne informatique dans un service de soins peut perturber
+directement la prise en charge des patients, et les interventions du CSU
+prennent souvent un caractère urgent. Ces accompagnements ont rendu le
+besoin de StageSarcophage très concret. Les modes dégradés ne sont pas
+une formalité documentaire : lors d’une intervention, j’ai vu une unité
+revenir aux formulaires papier à cause d’une indisponibilité temporaire
+des outils de prescription. C’est exactement le scénario que
+l’application sécurise, en garantissant un accès fiable, centralisé et à
+jour aux documents de modes dégradés.</p>
 <h3 id="relation-avec-les-utilisateurs-hospitaliers">Relation avec les
 utilisateurs hospitaliers</h3>
-<p>Les interventions du CSU m’ont aussi montré l’importance de la
-communication dans le support informatique. Le personnel hospitalier
-(médecins, cadres de santé, infirmiers, aides-soignants, secrétaires
-médicales, agents administratifs) a des niveaux d’aisance informatique
-très variables. Il faut adapter le vocabulaire, reformuler les
-explications de manière concrète et tenir compte de la pression liée au
-service.</p>
-<p>La qualité perçue d’une intervention ne dépend pas seulement de la
-résolution technique. Expliquer ce qui s’est passé, rassurer sur la
-sécurité des données du patient et indiquer les précautions à prendre
-aide aussi l’utilisateur à reprendre son travail dans de bonnes
-conditions.</p>
-<p>Cette observation a influencé la conception de StageSarcophage. Une
-application utilisée par du personnel non informaticien, souvent dans un
-contexte de panne ou de stress, doit afficher des messages d’état
-compréhensibles et éviter les parcours inutiles.</p>
+<p>Le personnel hospitalier (médecins, cadres de santé, infirmiers,
+secrétaires médicales, agents administratifs) a des niveaux d’aisance
+informatique très variables : il faut adapter le vocabulaire, reformuler
+concrètement et tenir compte de la pression du service. La qualité
+perçue d’une intervention tient autant à l’explication donnée qu’à la
+résolution technique. Cette observation a directement influencé la
+conception de StageSarcophage : une application utilisée par du
+personnel non informaticien, souvent en contexte de panne, doit afficher
+des messages d’état compréhensibles et éviter les parcours inutiles.</p>
 <div class="page-break">
 
 </div>
 <h1 id="difficultés-rencontrées">Difficultés rencontrées</h1>
-<p>La principale difficulté a été la gestion du temps. Le stage ne se
-limitait pas au développement : les accompagnements du CSU ont pris une
-partie du temps disponible. Il a donc fallu ajuster le périmètre de
-certaines fonctionnalités pendant le projet.</p>
-<p><strong>Difficulté 1 : Séparation des responsabilités entre routes et
-services</strong></p>
-<p>Au début du projet, les premières routes Flask mélangeaient logique
-d’accès réseau, règles de stockage et rendu HTML. Cette organisation
-rendait les tests plus difficiles et augmentait le risque de
-duplication. Dès la deuxième semaine, j’ai déplacé la logique métier
-dans une couche de services (<code>app/services/</code>) séparée des
-routes. Les routes se limitent ainsi à l’authentification, à la lecture
-des paramètres, à l’appel des services et au rendu.</p>
-<p><strong>Difficulté 2 : Tests de protocoles sans
-infrastructure</strong></p>
-<p>SFTP, SMB, LDAP et SMTP ne peuvent pas être testés contre de vrais
-serveurs dans un pipeline d’intégration continue standard. J’ai donc
-utilisé des mocks (<code>unittest.mock</code>) pour simuler les
-bibliothèques sous-jacentes, notamment Paramiko et
-<code>smbprotocol</code>. Cela permet de tester les succès, erreurs
-réseau, timeouts et entrées dangereuses de façon reproductible. La
-limite reste nette : une recette sur infrastructure réelle est
-nécessaire avant déploiement.</p>
-<p><strong>Difficulté 3 : Sécurité des noms de fichiers issus de sources
-externes</strong></p>
-<p>Un nom de fichier provenant d’un serveur SFTP ou SMB est une entrée
-non fiable. Le cas <code>../secret.pdf</code> est le plus visible, mais
-des chemins absolus ou des caractères de contrôle peuvent aussi poser
-problème. La solution retenue, vérification par <code>realpath</code> et
-<code>commonpath</code> dans <code>app/utils/files.py</code>, est plus
-robuste qu’un simple filtrage de chaînes. Elle a été appliquée à tous
-les points du code qui manipulent des chemins de fichiers :
-synchronisation, téléchargement, ZIP, purge et corbeille.</p>
-<p><strong>Difficulté 4 : Double modèle d’accès : sessions web et tokens
-API</strong></p>
-<p>L’interface web utilise des sessions avec CSRF ; l’API utilise des
-tokens Bearer sans CSRF. Ces deux chemins doivent appliquer les mêmes
-règles de permissions métier. Le risque était de sécuriser l’interface
-en laissant l’API contourner certains contrôles. J’ai donc centralisé
-les vérifications dans des décorateurs réutilisables
-(<code>app/utils/decorators.py</code>) appliqués aux deux chemins, avec
-des tests dédiés dans <code>tests/test_api_permissions.py</code>.</p>
-<p>L’appropriation des sujets de sécurité liés au contexte hospitalier
-(HDS, chiffrement des identifiants, contrôle des chemins) a aussi pris
-du temps. La partie sécurité a donc réduit le temps disponible pour les
-tests d’intégration. Pour rester dans les huit semaines, j’ai limité ce
-périmètre tout en gardant les tests unitaires sur les règles
-sensibles.</p>
+<p>Les difficultés techniques ponctuelles — séparation des routes et des
+services, contexte applicatif des threads, chevauchement des jobs,
+verrouillage SQLite, granularité des dates SMB, fuseaux horaires,
+traversée de chemin — ont été racontées dans la partie II, au plus près
+des choix qu’elles ont provoqués. Cette section revient sur les
+difficultés transversales : celles qui ne se corrigent pas par un
+commit, mais qui ont structuré le déroulement du stage.</p>
+<p><strong>Mener deux missions de front.</strong> Le stage ne se
+limitait pas au développement : les accompagnements du CSU occupaient
+une partie du temps, par nature imprévisible puisque dictée par les
+incidents. Il a fallu apprendre à protéger des plages de développement
+continues — une fonctionnalité comme la synchronisation supporte mal le
+morcellement — tout en restant disponible pour les interventions.
+Concrètement, cela a imposé des arbitrages : certaines fonctionnalités
+avancées ont été documentées plutôt que finalisées, et les tests
+d’intégration ont été concentrés sur la dernière semaine.</p>
+<p><strong>Changer de posture sur la sécurité.</strong> La difficulté la
+plus formatrice n’a pas été d’apprendre tel ou tel mécanisme (CSRF, CSP,
+Fernet), mais de changer de question : ne plus me demander « est-ce que
+ça marche ? » mais « comment cela peut-il être détourné ? ». Une
+application qui collecte des fichiers manipule en permanence des entrées
+non fiables — noms de fichiers distants, contenus exportés vers un
+tableur, chemins de téléchargement, tokens d’API. Chaque fonctionnalité
+ajoutée rouvrait la question pour un périmètre nouveau. C’est ce qui
+explique le débordement de la phase sécurité sur le planning
+prévisionnel : la charge de sécurisation croît avec le nombre de
+fonctionnalités, et je l’avais sous-estimée en début de stage.</p>
+<p><strong>Garantir les mêmes règles sur deux chemins d’accès.</strong>
+Un cas particulier de cette vigilance mérite d’être isolé : l’interface
+web utilise des sessions avec CSRF, l’API des tokens Bearer sans CSRF,
+et ces deux chemins doivent appliquer exactement les mêmes permissions
+métier. Le risque insidieux était de durcir l’interface tout en laissant
+l’API contourner silencieusement certains contrôles. J’ai centralisé les
+vérifications dans des décorateurs réutilisables
+(<code>app/utils/decorators.py</code>) appliqués aux deux chemins, et
+verrouillé cette propriété par des tests dédiés
+(<code>tests/test_api_permissions.py</code>) — si quelqu’un fait
+diverger les deux chemins à l’avenir, un test échouera.</p>
+<p><strong>Tester sans l’infrastructure cible.</strong> SFTP, SMB, LDAP
+et SMTP ne pouvaient pas être testés contre les vrais serveurs de
+l’établissement depuis mon environnement de développement. J’ai simulé
+les bibliothèques sous-jacentes (Paramiko, <code>smbprotocol</code>)
+avec <code>unittest.mock</code>, ce qui permet de tester de façon
+reproductible les succès, les erreurs réseau, les timeouts et les
+entrées dangereuses. La limite est connue et assumée : ces tests
+valident ma logique, pas la compatibilité réelle avec les serveurs de la
+DSI — c’est pourquoi la recette sur infrastructure réelle figure en tête
+des perspectives.</p>
+<p><strong>Estimer son propre travail.</strong> Enfin, ce stage m’a
+confronté à la difficulté d’estimer. Le planning prévisionnel s’est
+avéré juste dans ses grandes lignes, mais systématiquement optimiste sur
+les finitions : un connecteur « qui marche » et un connecteur testé,
+sécurisé et journalisé ne représentent pas le même volume de travail.
+J’en retiens une règle pratique pour la suite : le dernier quart d’une
+fonctionnalité coûte aussi cher que les trois premiers.</p>
 <div class="page-break">
 
 </div>
 <h1 id="conclusion">Conclusion</h1>
-<p>StageSarcophage répond au besoin posé en début de stage : les PDF de
-modes dégradés, auparavant dispersés sur des serveurs hétérogènes, sont
-collectés, dédupliqués, datés et accessibles depuis un point d’accès
-unique, sécurisé et traçable.</p>
-<p>Les choix techniques (Flask, SQLite, APScheduler, Fernet,
-ThreadPoolExecutor, Docker) ont été guidés par le cahier des charges :
+<p>StageSarcophage centralise ce qui était dispersé : les PDF de modes
+dégradés, auparavant éparpillés sur des serveurs hétérogènes, sont
+maintenant collectés, dédupliqués et accessibles depuis un point d’accès
+unique. Trois attributs non négociables en contexte HDS : sécurisé
+(Fernet, CSRF, confinement des chemins), traçable (journaux de toutes
+les opérations), fiable (copies locales disponibles même si la source
+est inaccessible).</p>
+<p>Les choix techniques — Flask, SQLite, APScheduler, Fernet,
+ThreadPoolExecutor, Docker — ont été guidés par le cahier des charges :
 simplicité de déploiement, environnement hospitalier, volume attendu
 limité. L’objectif n’était pas de multiplier les composants, mais de
 livrer une base maintenable. Chaque choix a été comparé aux alternatives
 disponibles et ses limites sont documentées.</p>
-<p>Le travail de sécurité a été plus long que prévu. Une application de
-collecte de fichiers manipule vite des entrées non fiables : noms de
-fichiers distants, exports tableur, formulaires web, tokens API, chemins
-de téléchargement. Le confinement des chemins, la sanitisation des
-exports, le CSRF, la CSP, la rotation Fernet et le double modèle d’accès
-session/token ont donc pris une place importante dans le projet.</p>
-<p>La suite logique est une recette par la DSI sur l’infrastructure
+<p>Le travail de sécurité a été plus long que prévu, et c’est
+compréhensible : une application de collecte de fichiers manipule
+rapidement des entrées non fiables — noms de fichiers distants, exports
+tableur, formulaires web, tokens API, chemins de téléchargement. Le
+confinement des chemins, la sanitisation des exports, le CSRF, la CSP et
+le double modèle d’accès session/token ont donc pris une place
+importante dans le projet.</p>
+<p>Sur le plan personnel, ce stage m’a davantage appris par ses
+problèmes que par ce qui a fonctionné du premier coup : un
+<code>TypeError</code> sur des fuseaux horaires, une base verrouillée
+par un thread ou un job exécuté en double obligent à comprendre ce que
+les frameworks font réellement sous la surface, là où l’usage ordinaire
+permet de l’ignorer. C’est cette compréhension — plus que la liste des
+fonctionnalités livrées — qui me semble constituer l’acquis principal de
+ces huit semaines.</p>
+<p>La prochaine étape est une recette par la DSI sur l’infrastructure
 réelle du Centre Antoine Lacassagne. Elle permettra de valider les
 connecteurs, de mesurer les performances sur des fichiers représentatifs
 et d’ajuster les paramètres de rétention avant une mise en service
-opérationnelle.</p>
+opérationnelle — ce que ce stage n’a pas pu faire, mais a préparé.</p>
 <h1 id="bibliographie-et-sitographie">Bibliographie et sitographie</h1>
 <h2 id="documentation-technique">Documentation technique</h2>
 <ul>
@@ -990,11 +1016,6 @@ https://github.com/jborean93/smbprotocol</li>
 https://www.centreantoinelacassagne.org/</li>
 <li>Unicancer, fiche établissement CAL :
 https://www.unicancer.fr/fr/clcc/centre-antoine-lacassagne/</li>
-<li>Université Côte d’Azur, logos officiels :
-https://univ-cotedazur.fr/universite/communication-et-marque/nos-logos</li>
-<li>IUT Nice Côte d’Azur : https://iut.univ-cotedazur.fr/</li>
-<li>Département BUT Informatique :
-https://butinfo.univ-cotedazur.fr/</li>
 <li>ANSSI, <em>Guide des bonnes pratiques de l’informatique</em>,
 https://www.ssi.gouv.fr/guide/bonnes-pratiques-de-linformatique/</li>
 <li>ANS (Agence du Numérique en Santé), <em>Certification HDS</em>,
@@ -1006,85 +1027,77 @@ https://esante.gouv.fr/labels-certifications/hds</li>
 <h1 id="annexes">Annexes</h1>
 <h2 id="annexe-a-commandes-de-vérification-et-de-qualité">Annexe A :
 Commandes de vérification et de qualité</h2>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Suite complète (lint + tests + sécurité + audit + permissions)</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> check</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Tests seuls avec couverture</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Analyse de sécurité statique (Bandit)</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> security</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Audit des dépendances (pip-audit)</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> audit</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Scan des secrets suivis par Git</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> secrets</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Vérification des permissions du .env</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> permissions</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Tests ciblés (plus rapide pendant le développement)</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest tests/test_api_permissions.py <span class="at">-v</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest tests/test_sync_service.py tests/test_purge_service.py <span class="at">-v</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest tests/test_security.py tests/test_documents_security.py <span class="at">-v</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Suite complète (lint + tests + sécurité + audit + permissions)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> check</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Tests ciblés (plus rapide pendant le développement)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest tests/test_api_permissions.py tests/test_security.py <span class="at">-v</span></span></code></pre></div>
 <h2 id="annexe-b-checklist-de-mise-en-production">Annexe B : Checklist
 de mise en production</h2>
 <p>Avant déploiement en environnement réel, vérifier les points suivants
 :</p>
-<p><strong>Configuration</strong> : - [ ] <code>SECRET_KEY</code> est
-une valeur aléatoire de 32 octets minimum (non la valeur par défaut de
-développement) - [ ] <code>ENCRYPTION_KEY</code> est une clé Fernet
-valide, distincte de <code>SECRET_KEY</code> - [ ]
-<code>FLASK_ENV=production</code> est bien défini - [ ] Le fichier
-<code>.env</code> a les permissions <code>chmod 600</code> - [ ]
-<code>STORAGE_DIR</code> pointe vers un volume persistant (pas un
-répertoire temporaire)</p>
-<p><strong>Infrastructure</strong> : - [ ] Un reverse proxy HTTPS
-(nginx, Traefik) est configuré devant Gunicorn - [ ] Les variables
+<p><strong>Configuration</strong> :</p>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>SECRET_KEY</code> est une
+valeur aléatoire de 32 octets minimum (non la valeur par défaut de
+développement)</label></li>
+<li><label><input type="checkbox" /><code>ENCRYPTION_KEY</code> est une
+clé Fernet valide, distincte de <code>SECRET_KEY</code></label></li>
+<li><label><input type="checkbox" /><code>FLASK_ENV=production</code>
+est bien défini</label></li>
+<li><label><input type="checkbox" />Le fichier <code>.env</code> a les
+permissions <code>chmod 600</code></label></li>
+<li><label><input type="checkbox" /><code>STORAGE_DIR</code> pointe vers
+un volume persistant (pas un répertoire temporaire)</label></li>
+</ul>
+<p><strong>Infrastructure</strong> :</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Un reverse proxy HTTPS (nginx,
+Traefik) est configuré devant Gunicorn</label></li>
+<li><label><input type="checkbox" />Les variables
 <code>FORCE_HTTPS=true</code>, <code>TRUST_PROXY=true</code>,
-<code>SESSION_COOKIE_SECURE=true</code> sont activées - [ ] Une
-sauvegarde planifiée du fichier SQLite, du dossier
-<code>STORAGE_DIR</code> et du fichier <code>.env</code> est en
-place</p>
-<p><strong>Tests d’acceptation</strong> : - [ ] Connexion réussie à un
-serveur SFTP réel de l’établissement - [ ] Connexion réussie à un
-partage SMB réel de l’établissement - [ ] Synchronisation d’un lot de
-documents réels sans erreur - [ ] Consultation et téléchargement de
-documents depuis l’interface web - [ ] Vérification des journaux après
-chaque opération - [ ] Test de révocation d’un token API</p>
-<p><strong>Sécurité</strong> : - [ ] <code>make check</code> passe sans
-erreur sur la version finale - [ ] Headers HTTP vérifiés avec un outil
-comme securityheaders.com - [ ] Aucune clé secrète ne figure dans les
-variables d’environnement Docker en texte clair dans les logs</p>
+<code>SESSION_COOKIE_SECURE=true</code> sont activées</label></li>
+<li><label><input type="checkbox" />Une sauvegarde planifiée du fichier
+SQLite, du dossier <code>STORAGE_DIR</code> et du fichier
+<code>.env</code> est en place</label></li>
+</ul>
+<p><strong>Tests d’acceptation</strong> :</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Connexion réussie à un serveur SFTP
+réel de l’établissement</label></li>
+<li><label><input type="checkbox" />Connexion réussie à un partage SMB
+réel de l’établissement</label></li>
+<li><label><input type="checkbox" />Synchronisation d’un lot de
+documents réels sans erreur</label></li>
+<li><label><input type="checkbox" />Consultation et téléchargement de
+documents depuis l’interface web</label></li>
+<li><label><input type="checkbox" />Vérification des journaux après
+chaque opération</label></li>
+<li><label><input type="checkbox" />Test de révocation d’un token
+API</label></li>
+</ul>
+<p><strong>Sécurité</strong> :</p>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>make check</code> passe sans
+erreur sur la version finale</label></li>
+<li><label><input type="checkbox" />Headers HTTP vérifiés avec un outil
+comme securityheaders.com</label></li>
+<li><label><input type="checkbox" />Aucune clé secrète ne figure dans
+les variables d’environnement Docker en texte clair dans les
+logs</label></li>
+</ul>
 <div class="page-break">
 
 </div>
-<h1 id="table-des-illustrations-1">Table des illustrations</h1>
+<h1 id="table-des-illustrations">Table des illustrations</h1>
 <p>Figure 1 : Situation avant et après StageSarcophage : dispersion des
 sources vs accès centralisé …………………… Introduction</p>
 <p>Figure 2 : Architecture applicative de StageSarcophage : couches
-Flask, services et stockage ………………………….. Partie II : II.2</p>
-<p>Figure 3 : Modèle de données : entités SQLAlchemy et leurs relations
-…………………………………………………………. Partie II : II.2</p>
-<p>Figure 4 : Flux de synchronisation d’un document PDF : de la
-détection à l’écriture contrôlée ……………………….. Partie II : II.3</p>
-<p>Figure 5 : Tableau de bord : indicateurs clés et activité récente
-……………………………………………………………………. Partie II : II.5</p>
-<p>Figure 6 : Cycle de vie d’un document PDF : états de fraîcheur,
+Flask, services et stockage ……………………….. Partie II : II.2</p>
+<p>Figure 3 : Flux de synchronisation d’un document PDF : déduplication
+à deux niveaux et écriture contrôlée …… Partie II : II.3</p>
+<p>Figure 4 : Cycle de vie d’un document PDF : états de fraîcheur,
 transitions et chronologie de purge ……………….. Partie II : II.4</p>
-<p>Figure 7 : Architecture de sécurité : défense en profondeur, 7
-couches de contrôles superposés ……………………… Partie II : II.7</p>
-<p>Figure 8 : Architecture de déploiement : Docker, Gunicorn, volumes
-persistants et sources externes ………………. Partie II : II.9</p>
-<p>Figure 9 : Analyse comparative des choix technologiques : Flask,
-SQLite, ThreadPoolExecutor, Fernet …………… Partie II : II.1</p>
-<p>Figure 10 : Vue d’ensemble des endpoints API REST v1 : routes,
-méthodes HTTP et authentification ………………. Partie II : II.6</p>
-<p>Figure 11 : Planning prévisionnel vs réalisé : 8 semaines de stage
-avec sécurité/API prolongée ……………………. Partie I : I.4</p>
-<p>Figure 12 : Pipeline de qualité make check : 6 étapes et couverture
-des 20 fichiers de tests ……………………………. Partie II : II.8</p>
 </body>
 </html>
