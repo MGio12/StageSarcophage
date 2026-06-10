@@ -84,7 +84,7 @@
       <tbody>
         {% for j in journaux %}
         <tr>
-          <td class="small text-muted text-nowrap">
+          <td class="small text-muted text-nowrap font-monospace">
             {{ j.created_at.strftime('%d/%m/%Y %H:%M:%S') if j.created_at else '-' }}
           </td>
           <td>
@@ -96,7 +96,7 @@
                  class="text-decoration-none text-muted">{{ j.source.nom }}</a>
             {% else %}-{% endif %}
           </td>
-          <td class="small text-muted">
+          <td class="small text-muted font-monospace">
             {% if j.user %}{{ j.user.username }}{% else %}-{% endif %}
           </td>
           <td class="small">{{ j.message }}</td>

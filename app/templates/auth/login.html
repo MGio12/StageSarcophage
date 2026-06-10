@@ -4,41 +4,37 @@
 {% block content %}
 <div class="login-shell">
   <div class="login-card">
-    <div class="card shadow-sm">
-      <div class="card-header bg-white text-center py-4">
-        <i class="bi bi-file-medical-fill text-primary fs-1" aria-hidden="true"></i>
-        <h1 class="h4 mt-2 mb-0">Modes Dégradés</h1>
-        <div class="text-muted small">CLCC - DSI</div>
-      </div>
-      <div class="card-body p-4">
+    <div class="card">
+      <div class="login-accent"></div>
+      <div class="card-body p-4 pt-4">
+        <div class="text-center mb-4">
+          <span class="login-glyph" aria-hidden="true"><i class="bi bi-file-medical-fill fs-4"></i></span>
+          <h1 class="h4 mb-1">Modes Dégradés</h1>
+          <div class="login-sub">CLCC · DSI</div>
+        </div>
+
         <form method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           <div class="mb-3">
             <label for="username" class="form-label">Identifiant</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person" aria-hidden="true"></i></span>
-              <input type="text" class="form-control" id="username" name="username"
-                     required autofocus autocomplete="username">
-            </div>
+            <input type="text" class="form-control" id="username" name="username"
+                   required autofocus autocomplete="username" placeholder="prenom.nom">
           </div>
 
           <div class="mb-3">
             <label for="password" class="form-label">Mot de passe</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
-              <input type="password" class="form-control" id="password" name="password"
-                     required autocomplete="current-password">
-            </div>
+            <input type="password" class="form-control" id="password" name="password"
+                   required autocomplete="current-password" placeholder="••••••••">
           </div>
 
-          <div class="mb-3 form-check">
+          <div class="mb-4 form-check">
             <input type="checkbox" class="form-check-input" id="remember" name="remember" value="1">
-            <label class="form-check-label" for="remember">Rester connecté</label>
+            <label class="form-check-label small" for="remember">Rester connecté</label>
           </div>
 
           <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Se connecter
+            <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i> Se connecter
           </button>
         </form>
       </div>

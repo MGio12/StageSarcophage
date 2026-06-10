@@ -52,12 +52,12 @@
               {{ source.protocole|upper }}
             </span>
           </td>
-          <td class="small text-muted">
+          <td class="small text-muted font-monospace">
             {{ source.adresse or '-' }}
             {% if source.port %}<span class="text-secondary">:{{ source.port }}</span>{% endif %}
           </td>
-          <td class="text-center">{{ s.nb_docs }}</td>
-          <td class="small text-muted">
+          <td class="text-center num">{{ s.nb_docs }}</td>
+          <td class="small text-muted font-monospace">
             {% if s.derniere_sync %}
               {{ s.derniere_sync.created_at.strftime('%d/%m/%Y %H:%M') }}
             {% else %}

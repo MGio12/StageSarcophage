@@ -1,86 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Tableau de bord - Modes Dégradés{% endblock %}
 
+{% block topbar_actions %}
+  <a href="{{ url_for('sources.nouvelle') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Nouvelle source
+  </a>
+  <form method="post" action="{{ url_for('sources.synchroniser_toutes') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Synchroniser tout
+    </button>
+  </form>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0"><i class="bi bi-speedometer2" aria-hidden="true"></i> Tableau de bord</h1>
-  <div class="d-flex gap-2">
-    <a href="{{ url_for('sources.nouvelle') }}" class="btn btn-outline-primary btn-sm">
-      <i class="bi bi-plus-circle" aria-hidden="true"></i> Nouvelle source
-    </a>
-    <form method="post" action="{{ url_for('sources.synchroniser_toutes') }}" class="d-inline">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Synchroniser tout
-      </button>
-    </form>
-  </div>
-</div>
+<h1 class="visually-hidden">Tableau de bord</h1>
 
-<!-- Stat cards -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3">
-    <div class="card text-bg-primary shadow-sm h-100">
-      <div class="card-body d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fs-2 fw-bold">{{ total }}</div>
-          <div class="opacity-75 small">Documents actifs</div>
-        </div>
-        <i class="bi bi-files fs-1 opacity-50" aria-hidden="true"></i>
-      </div>
-    </div>
+<!-- Cluster d'instruments -->
+<section class="stat-cluster mb-4" aria-label="Indicateurs">
+  <div class="stat-tile" style="--tile-accent:var(--petrol)">
+    <div class="stat-top"><span class="stat-lbl">Documents actifs</span><span class="status-dot dot-neu"></span></div>
+    <div class="stat-num">{{ total }}</div>
+    <div class="stat-sub">parc surveillé</div>
   </div>
-  <div class="col-6 col-lg-3">
-    <div class="card text-bg-success shadow-sm h-100">
-      <div class="card-body d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fs-2 fw-bold">{{ nb_ok }}</div>
-          <div class="opacity-75 small">OK - à jour</div>
-        </div>
-        <i class="bi bi-check-circle fs-1 opacity-50" aria-hidden="true"></i>
-      </div>
-    </div>
+  <div class="stat-tile" style="--tile-accent:var(--ok)">
+    <div class="stat-top"><span class="stat-lbl">À jour</span><span class="status-dot dot-ok"></span></div>
+    <div class="stat-num">{{ nb_ok }}</div>
+    <div class="stat-sub">{{ (nb_ok / total * 100)|round(1) if total else 0 }} % du parc</div>
   </div>
-  <div class="col-6 col-lg-3">
-    <div class="card text-bg-warning shadow-sm h-100">
-      <div class="card-body d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fs-2 fw-bold">{{ nb_avertissement }}</div>
-          <div class="opacity-75 small">Avertissement</div>
-        </div>
-        <i class="bi bi-exclamation-triangle fs-1 opacity-50" aria-hidden="true"></i>
-      </div>
-    </div>
+  <div class="stat-tile" style="--tile-accent:var(--attention)">
+    <div class="stat-top"><span class="stat-lbl">Attention</span><span class="status-dot dot-att"></span></div>
+    <div class="stat-num">{{ nb_avertissement }}</div>
+    <div class="stat-sub">&gt; 30 jours</div>
   </div>
-  <div class="col-6 col-lg-3">
-    <div class="card text-bg-danger shadow-sm h-100">
-      <div class="card-body d-flex justify-content-between align-items-start">
-        <div>
-          <div class="fs-2 fw-bold">{{ nb_critique }}</div>
-          <div class="opacity-75 small">Critique</div>
-        </div>
-        <i class="bi bi-x-circle fs-1 opacity-50" aria-hidden="true"></i>
-      </div>
-    </div>
+  <div class="stat-tile" style="--tile-accent:var(--critique)">
+    <div class="stat-top"><span class="stat-lbl">Critique</span><span class="status-dot dot-cri"></span></div>
+    <div class="stat-num">{{ nb_critique }}</div>
+    <div class="stat-sub">&gt; 90 jours</div>
   </div>
-</div>
+</section>
 
-<div class="row g-3">
-  <!-- Sources -->
+<div class="row g-4">
+  <!-- État des sources -->
   <div class="col-lg-7">
-    <div class="card shadow-sm">
+    <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold"><i class="bi bi-hdd-network" aria-hidden="true"></i> État des sources</span>
+        <span class="fw-semibold"><i class="bi bi-hdd-network me-1" aria-hidden="true"></i> État des sources</span>
         <a href="{{ url_for('sources.index') }}" class="btn btn-outline-secondary btn-sm">Voir tout</a>
       </div>
       <div class="table-responsive">
-        <table class="table table-hover table-sm mb-0 align-middle">
-          <thead class="table-light">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
             <tr>
               <th scope="col">Source</th>
               <th scope="col">Protocole</th>
-              <th scope="col" class="text-center">Docs</th>
+              <th scope="col" class="text-end">Docs</th>
               <th scope="col">Dernière sync</th>
+              <th scope="col">État</th>
               <th scope="col"><span class="visually-hidden">Actions</span></th>
             </tr>
           </thead>
@@ -90,25 +66,23 @@
               <td>
                 <a href="{{ url_for('sources.detail', source_id=s.source.id) }}"
                    class="text-decoration-none fw-medium">{{ s.source.nom }}</a>
+              </td>
+              <td><span class="proto">{{ s.source.protocole|upper }}</span></td>
+              <td class="text-end num">{{ s.nb_docs }}</td>
+              <td class="num text-muted small">
+                {% if s.derniere_sync %}{{ s.derniere_sync.created_at.strftime('%d/%m/%Y %H:%M') }}{% else %}— jamais{% endif %}
+              </td>
+              <td>
                 {% if not s.source.actif %}
-                  <span class="badge bg-secondary ms-1">inactif</span>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge bg-light text-dark border">{{ s.source.protocole|upper }}</span>
-              </td>
-              <td class="text-center">{{ s.nb_docs }}</td>
-              <td class="text-muted small">
-                {% if s.derniere_sync %}
-                  {{ s.derniere_sync.created_at.strftime('%d/%m/%Y %H:%M') }}
+                  <span class="status is-muted"><span class="status-dot dot-muted"></span>inactif</span>
+                {% elif s.derniere_sync %}
+                  <span class="status is-ok"><span class="status-dot dot-ok"></span>actif</span>
                 {% else %}
-                  <em>Jamais</em>
+                  <span class="status is-att"><span class="status-dot dot-att"></span>jamais</span>
                 {% endif %}
               </td>
-              <td>
-                <form method="post"
-                      action="{{ url_for('sources.synchroniser', source_id=s.source.id) }}"
-                      class="d-inline">
+              <td class="text-end">
+                <form method="post" action="{{ url_for('sources.synchroniser', source_id=s.source.id) }}" class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-primary btn-sm" title="Synchroniser" aria-label="Synchroniser {{ s.source.nom }}">
                     <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
@@ -118,7 +92,7 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="5" class="text-center text-muted py-4">
+              <td colspan="6" class="text-center text-muted py-4">
                 Aucune source configurée.
                 <a href="{{ url_for('sources.nouvelle') }}">Ajouter une source</a>
               </td>
@@ -130,88 +104,84 @@
     </div>
   </div>
 
-  <!-- Alertes -->
+  <!-- Colonne droite -->
   <div class="col-lg-5">
-    {% if docs_critiques %}
-    <div class="card border-danger shadow-sm mb-3">
-      <div class="card-header bg-danger text-white fw-semibold">
-        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-        Documents critiques ({{ docs_critiques|length }})
-      </div>
-      <ul class="list-group list-group-flush">
-        {% for doc in docs_critiques %}
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <div>
-            <div class="fw-medium small">{{ doc.nom_fichier }}</div>
-            <div class="text-muted x-small">
-              {{ doc.source.nom if doc.source else '-' }}
+    <div class="d-flex flex-column gap-4">
+
+      {% if docs_critiques %}
+      <div class="card panel-alert">
+        <div class="card-header">
+          <span class="fw-semibold"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i> Documents critiques · {{ nb_critique }}</span>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for doc in docs_critiques %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2">
+            <div class="min-w-0">
+              <div class="font-monospace small text-truncate">{{ doc.nom_fichier }}</div>
+              <div class="text-muted x-small">{{ doc.source.nom if doc.source else '-' }}</div>
             </div>
-          </div>
-          <a href="{{ url_for('documents.voir', doc_id=doc.id) }}"
-             class="btn btn-sm btn-outline-danger" title="Consulter" aria-label="Consulter {{ doc.nom_fichier }}">
-            <i class="bi bi-eye" aria-hidden="true"></i>
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-
-    {% if erreurs_recentes %}
-    <div class="card border-warning shadow-sm mb-3">
-      <div class="card-header bg-warning text-dark fw-semibold">
-        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Erreurs récentes
+            <a href="{{ url_for('documents.voir', doc_id=doc.id) }}"
+               class="btn btn-sm btn-outline-danger flex-shrink-0" title="Consulter" aria-label="Consulter {{ doc.nom_fichier }}">
+              <i class="bi bi-eye" aria-hidden="true"></i>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
       </div>
-      <ul class="list-group list-group-flush">
-        {% for err in erreurs_recentes %}
-        <li class="list-group-item small py-2">
-          <div class="text-danger fw-medium">
-            {{ err.message[:90] }}{% if err.message|length > 90 %}…{% endif %}
-          </div>
-          <div class="text-muted x-small">
-            {{ err.created_at.strftime('%d/%m %H:%M') if err.created_at }}
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
+      {% endif %}
 
-    {% if not docs_critiques and not erreurs_recentes %}
-    <div class="card shadow-sm">
-      <div class="card-body text-center text-success py-5">
-        <i class="bi bi-check-circle-fill fs-1" aria-hidden="true"></i>
-        <div class="mt-2 fw-semibold">Aucune alerte active</div>
-        <div class="text-muted small">Tous les documents sont à jour.</div>
+      {% if erreurs_recentes %}
+      <div class="card">
+        <div class="card-header">
+          <span class="fw-semibold text-warning"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i> Erreurs récentes</span>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for err in erreurs_recentes %}
+          <li class="list-group-item py-2">
+            <div class="small text-danger fw-medium">{{ err.message[:90] }}{% if err.message|length > 90 %}…{% endif %}</div>
+            <div class="text-muted x-small font-monospace">{{ err.created_at.strftime('%d/%m %H:%M') if err.created_at }}</div>
+          </li>
+          {% endfor %}
+        </ul>
       </div>
-    </div>
-    {% endif %}
+      {% endif %}
 
-    <div class="card shadow-sm mt-3">
-      <div class="card-header fw-semibold">
-        <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Rapports de conformité
-      </div>
-      <div class="card-body">
-        <p class="small text-muted mb-2">Exporter la liste des documents avec leur statut.</p>
-        <div class="d-flex gap-2">
-          <a href="{{ url_for('main.rapport_excel') }}" class="btn btn-success btn-sm">
-            <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Excel
-          </a>
-          <a href="{{ url_for('main.rapport_pdf') }}" class="btn btn-danger btn-sm">
-            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF
-          </a>
+      {% if not docs_critiques and not erreurs_recentes %}
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-check-circle-fill fs-1" style="color:var(--ok)" aria-hidden="true"></i>
+          <div class="mt-2 fw-semibold">Aucune alerte active</div>
+          <div class="text-muted small">Tous les documents sont à jour.</div>
         </div>
       </div>
-    </div>
+      {% endif %}
 
-    <div class="mt-3">
-      <a href="{{ url_for('documents.index', statut='critique') }}"
-         class="btn btn-outline-danger btn-sm me-2">
-        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> Voir documents critiques
-      </a>
-      <a href="{{ url_for('journaux.index') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-journal-text" aria-hidden="true"></i> Journaux
-      </a>
+      <div class="card">
+        <div class="card-header">
+          <span class="fw-semibold"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i> Rapports de conformité</span>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-2">Exporter la liste des documents avec leur statut de fraîcheur.</p>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('main.rapport_excel') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i> Excel
+            </a>
+            <a href="{{ url_for('main.rapport_pdf') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i> PDF
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('documents.index', statut='critique') }}" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i> Documents critiques
+        </a>
+        <a href="{{ url_for('journaux.index') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Journaux
+        </a>
+      </div>
+
     </div>
   </div>
 </div>

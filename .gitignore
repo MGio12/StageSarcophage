@@ -90,3 +90,7 @@ dmypy.json
 *.bak
 *.tmp
 .cache/
+
+# === Scratch refonte visuelle (non versionné) ===
+.playwright-mcp/
+design/

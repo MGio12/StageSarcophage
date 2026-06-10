@@ -124,22 +124,22 @@
                      class="form-check-input doc-check"
                      aria-label="Sélectionner {{ doc.nom_fichier }}">
             </td>
-            <td class="small fw-medium">{{ doc.nom_fichier }}</td>
+            <td class="small fw-medium font-monospace">{{ doc.nom_fichier }}</td>
             <td class="small text-muted">
               {% if doc.source %}
                 <a href="{{ url_for('sources.detail', source_id=doc.source.id) }}"
                    class="text-decoration-none text-muted">{{ doc.source.nom }}</a>
               {% else %}-{% endif %}
             </td>
-            <td class="small text-muted text-nowrap">
+            <td class="small text-muted text-nowrap font-monospace">
               {{ doc.date_modification_source.strftime('%d/%m/%Y') if doc.date_modification_source else '-' }}
             </td>
-            <td class="small text-nowrap">
+            <td class="small text-nowrap font-monospace">
               {% if age is not none %}
                 {{ age }} j
               {% else %}-{% endif %}
             </td>
-            <td class="small text-muted">{{ doc.taille_octets|format_taille }}</td>
+            <td class="small text-muted font-monospace">{{ doc.taille_octets|format_taille }}</td>
             <td class="text-center">
               {{ ui.status_badge(doc.statut) }}
             </td>
