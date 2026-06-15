@@ -1,3 +1,5 @@
+name: arche
+
 services:
   web:
     build: .
@@ -10,6 +12,7 @@ services:
     environment:
       # Surcharge les valeurs de .env pour garantir le mode production
       FLASK_ENV: production
+      STORAGE_DIR: /data/modes-degrades
       # Gunicorn sert HTTP dans le conteneur. Activez ces options seulement
       # derrière un reverse proxy TLS qui nettoie les en-têtes Forwarded.
       FORCE_HTTPS: ${FORCE_HTTPS:-false}
@@ -25,7 +28,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-
 volumes:
   pdf_data:
   db_data:

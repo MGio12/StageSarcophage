@@ -1,6 +1,8 @@
 """Tests unitaires du connecteur SFTP - sans serveur réel (mock paramiko)."""
 from __future__ import annotations
 
+import base64
+import hashlib
 import stat as stat_module
 from dataclasses import dataclass
 from datetime import timezone
@@ -11,7 +13,10 @@ import pytest
 
 from app.services.sftp_service import (
     FichierDistant,
+    HostKeyMismatchError,
     ResultatConnexion,
+    StrictHostKeyPolicy,
+    _calculer_fingerprint,
     lister_fichiers,
     tester_connexion,
 )
@@ -49,6 +54,46 @@ def _build_ssh_mock(attrs: list) -> MagicMock:
     mock_ssh = MagicMock()
     mock_ssh.open_sftp.return_value = mock_sftp
     return mock_ssh
+
+
+class _FakeKey:
+    def __init__(self, payload: bytes = b"public-key"):
+        self.payload = payload
+
+    def asbytes(self) -> bytes:
+        return self.payload
+
+    def get_name(self) -> str:
+        return "ssh-ed25519"
+
+
+class TestFingerprintSFTP:
+    def test_fingerprint_utilise_format_openssh_sha256(self):
+        payload = b"server-public-key"
+        attendu = base64.b64encode(hashlib.sha256(payload).digest()).decode("ascii").rstrip("=")
+
+        fingerprint = _calculer_fingerprint(_FakeKey(payload))
+
+        assert fingerprint == f"SHA256:{attendu}"
+        assert "=" not in fingerprint
+
+    def test_fingerprint_legacy_hex_reste_accepte(self):
+        payload = b"server-public-key"
+        legacy_hex = hashlib.sha256(payload).hexdigest()
+        transport = MagicMock()
+        transport.getpeername.return_value = ("sftp", 22)
+        client = MagicMock()
+        client.get_transport.return_value = transport
+
+        with patch(
+            "app.services.sftp_service._get_stored_fingerprint",
+            return_value=(legacy_hex, "ssh-ed25519"),
+        ), patch("app.services.sftp_service._save_fingerprint") as save_fingerprint:
+            StrictHostKeyPolicy(source_id=42).missing_host_key(client, "sftp", _FakeKey(payload))
+
+        save_fingerprint.assert_called_once()
+        assert save_fingerprint.call_args.args[0:3] == (42, "sftp", 22)
+        assert save_fingerprint.call_args.args[3].startswith("SHA256:")
 
 
 class TestListerFichiersSFTP:
@@ -186,3 +231,14 @@ class TestTesterConnexionSFTP:
         result = tester_connexion(_Source())
         assert result.succes is False
         assert result.fichiers == []
+
+    def test_echec_fingerprint_modifie_retourne_empreintes(self):
+        with patch(
+            "app.services.sftp_service.lister_fichiers",
+            side_effect=HostKeyMismatchError("SHA256:ancienne", "SHA256:nouvelle"),
+        ):
+            result = tester_connexion(_Source())
+
+        assert result.succes is False
+        assert result.fingerprint_attendu == "SHA256:ancienne"
+        assert result.fingerprint_recu == "SHA256:nouvelle"

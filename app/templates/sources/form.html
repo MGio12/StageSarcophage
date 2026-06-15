@@ -14,6 +14,9 @@
 <form method="post" id="sourceForm"
       action="{{ url_for('sources.modifier', source_id=source.id) if source else url_for('sources.nouvelle') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <p class="text-muted small mb-3">
+    Les champs marqués d'un <span class="text-danger" aria-hidden="true">*</span> sont obligatoires.
+  </p>
 
   <div class="row g-3">
     <!-- Informations générales -->
@@ -24,7 +27,10 @@
         </div>
         <div class="card-body">
           <div class="mb-3">
-            <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+            <label for="nom" class="form-label">
+              Nom <span class="text-danger" aria-hidden="true">*</span>
+              <span class="visually-hidden">obligatoire</span>
+            </label>
             <input type="text" class="form-control" id="nom" name="nom"
                    value="{{ source.nom if source else '' }}" required>
           </div>
@@ -34,20 +40,7 @@
                       rows="2">{{ source.description if source else '' }}</textarea>
           </div>
           <div class="row g-2">
-            <div class="col-6">
-              <label for="type_serveur" class="form-label">Type de serveur</label>
-              <select class="form-select" id="type_serveur" name="type_serveur">
-                <option value="linux"
-                  {% if source and source.type_serveur == 'linux' %}selected{% endif %}>
-                  Linux
-                </option>
-                <option value="windows"
-                  {% if source and source.type_serveur == 'windows' %}selected{% endif %}>
-                  Windows
-                </option>
-              </select>
-            </div>
-            <div class="col-6">
+            <div class="col-12">
               <label for="protocole" class="form-label">Protocole</label>
               <select class="form-select" id="protocole" name="protocole">
                 <option value="sftp"
@@ -97,18 +90,19 @@
               <label for="adresse" class="form-label">Adresse (IP ou hostname)</label>
               <input type="text" class="form-control" id="adresse" name="adresse"
                      placeholder="192.168.1.10"
-                     value="{{ source.adresse if source else '' }}">
+                     value="{{ source.adresse if source and source.adresse else '' }}">
             </div>
             <div class="col-4">
               <label for="port" class="form-label">Port</label>
               <input type="number" class="form-control" id="port" name="port"
                      placeholder="auto"
-                     value="{{ source.port if source else '' }}">
+                     value="{{ source.port if source and source.port else '' }}">
             </div>
           </div>
           <div class="mb-3">
             <label for="chemin_distant" class="form-label">
-              Chemin distant <span class="text-danger">*</span>
+              Chemin distant <span class="text-danger" aria-hidden="true">*</span>
+              <span class="visually-hidden">obligatoire</span>
             </label>
             <input type="text" class="form-control" id="chemin_distant" name="chemin_distant"
                    placeholder="/home/partage/modes-degrades  ou  \\\\serveur\\partage"
@@ -236,6 +230,20 @@ function setIconText(element, iconClass, text, options = {}) {
   element.replaceChildren(icon, document.createTextNode(' ' + text));
 }
 
+function appendFingerprintNotice(element, json) {
+  if (!json.fingerprint_nouveau) return;
+
+  const fingerprint = document.createElement('div');
+  fingerprint.className = 'mt-1 font-monospace text-break';
+  fingerprint.textContent = `Fingerprint ${json.fingerprint_key_type || ''}: ${json.fingerprint_nouveau}`;
+
+  const notice = document.createElement('div');
+  notice.className = 'mt-1 text-muted';
+  notice.textContent = "Ce test ne l'enregistre pas. Enregistrez la source puis testez depuis sa fiche pour l'accepter.";
+
+  element.append(fingerprint, notice);
+}
+
 document.getElementById('btnTest').addEventListener('click', function () {
   const btn = this;
   const result = document.getElementById('test-result');
@@ -269,6 +277,7 @@ document.getElementById('btnTest').addEventListener('click', function () {
       result.className = 'small text-danger';
       setIconText(result, 'bi bi-x-circle', String(json.message || ''));
     }
+    appendFingerprintNotice(result, json);
   })
   .catch(() => {
     result.className = 'small text-danger';

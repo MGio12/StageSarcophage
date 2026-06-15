@@ -28,3 +28,15 @@ def test_admin_users_permission_ne_donne_pas_acces_aux_roles(client, db):
     response = client.get("/admin/roles")
 
     assert response.status_code == 403
+
+
+def test_notifications_aide_smtp_precise_auth_optionnelle(client, db):
+    _login(client, db, {"admin.notifications": True})
+
+    response = client.get("/admin/notifications")
+
+    assert response.status_code == 200, response.data.decode()
+    assert b"SMTP_HOST" in response.data
+    assert b"SMTP_FROM" in response.data
+    assert "SMTP_USER et SMTP_PASSWORD seulement si".encode() in response.data
+    assert b"SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD et SMTP_FROM" not in response.data

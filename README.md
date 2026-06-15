@@ -1,4 +1,4 @@
-# StageSarcophage
+# Arche
 
 Application Flask de centralisation et de suivi de documents PDF de modes dégradés.
 
@@ -31,6 +31,7 @@ Créer le fichier d'environnement:
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 ```
 
 Variables minimales:
@@ -39,7 +40,7 @@ Variables minimales:
 SECRET_KEY=change-me
 ENCRYPTION_KEY=change-me
 STORAGE_DIR=/data/modes-degrades
-FLASK_ENV=production
+FLASK_ENV=development
 ```
 
 Générer les clés:
@@ -50,6 +51,13 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 ```
 
 En production, le fichier `.env` doit rester hors Git et lisible uniquement par l'utilisateur qui lance l'application.
+En Docker, `docker-compose.yml` force `FLASK_ENV=production` et `STORAGE_DIR=/data/modes-degrades`; le fichier `.env` fournit surtout les secrets et les options d'infrastructure.
+
+Pour un lancement local depuis le dépôt, `STORAGE_DIR` peut pointer vers le dossier `data` du projet. Remplacer `/chemin/vers/Arche` par le chemin absolu du dépôt:
+
+```env
+STORAGE_DIR=/chemin/vers/Arche/data
+```
 
 ## Lancement Docker
 
@@ -87,6 +95,62 @@ SESSION_COOKIE_SECURE=true
 TRUST_PROXY=true
 ```
 
+## Configuration SMTP
+
+Les emails servent aux notifications et aux rapports envoyés depuis l'interface d'administration. La configuration se fait dans le fichier `.env` local, non versionné. En Docker, ce fichier est chargé par le service `web` via `env_file: .env`.
+
+Variables disponibles:
+
+| Variable | Obligatoire | Rôle |
+| --- | --- | --- |
+| `SMTP_HOST` | Oui pour activer l'envoi | Hostname ou IP du serveur SMTP. Si vide, aucun email n'est envoyé. |
+| `SMTP_PORT` | Oui | Port du serveur SMTP. Utiliser généralement `587` avec STARTTLS, ou `25` pour un relais interne sans TLS applicatif. |
+| `SMTP_USER` | Selon serveur | Identifiant SMTP. À laisser vide si le relais n'exige pas d'authentification. |
+| `SMTP_PASSWORD` | Selon serveur | Mot de passe SMTP. À laisser vide si le relais n'exige pas d'authentification. |
+| `SMTP_FROM` | Oui | Adresse expéditeur visible dans les emails. Elle doit souvent être autorisée par le serveur SMTP. |
+| `SMTP_USE_TLS` | Oui | `true` active STARTTLS après connexion SMTP ; `false` désactive STARTTLS. |
+
+Exemple pour un relais interne sans authentification:
+
+```env
+SMTP_HOST=smtp.interne.local
+SMTP_PORT=25
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=arche@example.local
+SMTP_USE_TLS=false
+```
+
+Exemple pour un SMTP authentifié avec STARTTLS:
+
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=arche@example.com
+SMTP_PASSWORD=mot-de-passe-ou-token
+SMTP_FROM=arche@example.com
+SMTP_USE_TLS=true
+```
+
+Le port `465` correspond souvent à SMTPS implicite. L'application actuelle utilise `SMTP` puis `STARTTLS`, pas `SMTP_SSL`; préférer donc le port `587` si TLS est requis.
+
+Après modification de `.env` en Docker, recréer le conteneur web pour relire les variables:
+
+```bash
+docker compose up -d --force-recreate web
+```
+
+En lancement local, arrêter Flask puis relancer après avoir rechargé `.env`:
+
+```bash
+set -a
+. ./.env
+set +a
+.venv/bin/flask --app run.py run --host 0.0.0.0 --port 5000
+```
+
+Tester ensuite depuis l'interface: `Administration > Notifications > Envoyer un email test`.
+
 ## Lancement Local
 
 Créer l'environnement Python:
@@ -112,6 +176,12 @@ Démarrer le serveur:
 .venv/bin/flask --app run.py run --host 0.0.0.0 --port 5000
 ```
 
+Ouvrir ensuite l'interface:
+
+```text
+http://127.0.0.1:5000
+```
+
 Healthcheck:
 
 ```bash
@@ -123,6 +193,33 @@ Documentation API locale:
 ```text
 http://127.0.0.1:5000/api/v1/docs
 ```
+
+## Tester une collecte locale
+
+Pour vérifier le fonctionnement sans serveur SFTP ou SMB, utiliser une source locale.
+
+Ajouter une racine locale autorisée dans `.env`:
+
+```env
+LOCAL_SOURCE_ALLOWED_ROOTS=/chemin/vers/Arche/data/sources
+```
+
+Créer un dossier source de test avec un PDF minimal:
+
+```bash
+mkdir -p data/sources/demo
+printf '%s\n' '%PDF-1.4 test' > data/sources/demo/test.pdf
+```
+
+Redémarrer Flask si le serveur était déjà lancé, puis dans l'interface:
+
+1. Aller dans `Sources`.
+2. Cliquer sur `Nouvelle source`.
+3. Choisir le protocole `Local / Montage réseau`.
+4. Renseigner le chemin `/chemin/vers/Arche/data/sources/demo`.
+5. Cocher `Synchroniser après création` ou lancer la synchronisation depuis la fiche source.
+
+Le document doit ensuite apparaître dans `Documents`, avec un statut de fraîcheur.
 
 ## Exploitation
 

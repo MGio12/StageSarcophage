@@ -54,6 +54,16 @@ def test_sources_requiert_permission_sources_view(client, db):
     assert "sources.view" in response.get_json()["missing_permissions"]
 
 
+def test_source_detail_n_expose_pas_type_serveur(client, db):
+    token = _token(db, {"sources.view": True})
+    src = _source(db)
+
+    response = client.get(f"/api/v1/sources/{src.id}", headers=_headers(token))
+
+    assert response.status_code == 200, response.get_data(as_text=True)
+    assert "type_serveur" not in response.get_json()
+
+
 def test_documents_requiert_permission_documents_view(client, db):
     token = _token(db, {"sources.view": True})
 

@@ -33,8 +33,7 @@ venv.bak/
 *.env
 
 # === Instance Flask (config locale, secrets) ===
-instance/*
-!instance/.gitkeep
+instance/
 
 # === Base de données ===
 *.db
@@ -42,16 +41,16 @@ instance/*
 *.sqlite3
 
 # === Données locales (fichiers PDF collectés) ===
-data/*
-!data/.gitkeep
+data/
 
 # === Logs ===
-logs/*
-!logs/.gitkeep
+logs/
 *.log
 
-# === Claude Code ===
+# === Outils agents locaux ===
 .claude/
+.agents/
+.gstack/
 
 # === IDE ===
 .vscode/
@@ -64,6 +63,7 @@ Thumbs.db
 
 # === Tests ===
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 .tox/
@@ -90,6 +90,7 @@ dmypy.json
 *.bak
 *.tmp
 .cache/
+dev-fixtures/
 
 # === Scratch refonte visuelle (non versionné) ===
 .playwright-mcp/
@@ -100,9 +101,6 @@ design/
 !README.md
 docs/
 rapport_stage/
-MethodologieRapportUnivMontpellier.pdf
-RS-Barbero_Lucas*.pdf
-RAPPORT_STAGE_REGLES.md
-DESIGN.md
-cahier_des_charges.md
+*.pdf
 *.odt
+*.pptx

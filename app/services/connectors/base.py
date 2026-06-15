@@ -22,6 +22,8 @@ class ResultatConnexion:
     fichiers: list[FichierDistant] = field(default_factory=list)
     fingerprint_nouveau: str | None = None
     fingerprint_key_type: str | None = None
+    fingerprint_attendu: str | None = None
+    fingerprint_recu: str | None = None
 
 
 class SourceConnector(Protocol):

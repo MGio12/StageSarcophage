@@ -6,6 +6,7 @@ Chemin distant attendu : chemin Unix absolu (ex : /home/partage/modes-degrades).
 """
 from __future__ import annotations
 
+import base64
 import fnmatch
 import hashlib
 import logging
@@ -48,10 +49,16 @@ def _nom_fichier_distant_sur(nom: str) -> bool:
 
 
 def _calculer_fingerprint(key: paramiko.PKey) -> str:
-    """Calcule le fingerprint SHA256 d'une clé publique SSH."""
+    """Calcule le fingerprint SHA256 OpenSSH d'une clé publique SSH."""
     key_bytes = key.asbytes()
-    digest = hashlib.sha256(key_bytes).hexdigest()
-    return digest
+    digest = hashlib.sha256(key_bytes).digest()
+    encoded = base64.b64encode(digest).decode("ascii").rstrip("=")
+    return f"SHA256:{encoded}"
+
+
+def _calculer_fingerprint_legacy_hex(key: paramiko.PKey) -> str:
+    """Ancien format conservé uniquement pour migrer les empreintes déjà stockées."""
+    return hashlib.sha256(key.asbytes()).hexdigest()
 
 
 def _get_stored_fingerprint(source_id: int, hostname: str, port: int) -> tuple[str, str] | None:
@@ -117,18 +124,21 @@ class StrictHostKeyPolicy(paramiko.MissingHostKeyPolicy):
     def missing_host_key(self, client, hostname, key):
         port = client.get_transport().getpeername()[1] if client.get_transport() else 22
         fingerprint = _calculer_fingerprint(key)
+        legacy_fingerprint = _calculer_fingerprint_legacy_hex(key)
         key_type = key.get_name()
 
         stored = _get_stored_fingerprint(self.source_id, hostname, port)
 
         if stored:
             stored_fp, stored_type = stored
-            if stored_fp != fingerprint:
+            if stored_fp not in {fingerprint, legacy_fingerprint}:
                 logger.warning(
                     "SFTP host key mismatch for %s:%d - expected %s, got %s",
                     hostname, port, stored_fp[:16], fingerprint[:16]
                 )
                 raise HostKeyMismatchError(stored_fp, fingerprint)
+            if stored_fp == legacy_fingerprint and self.source_id:
+                _save_fingerprint(self.source_id, hostname, port, fingerprint, key_type)
             logger.debug("SFTP host key verified for %s:%d", hostname, port)
         else:
             self.new_fingerprint = fingerprint
@@ -261,6 +271,8 @@ def tester_connexion(source, trust_new_key: bool = False) -> ResultatConnexion:
         return ResultatConnexion(
             succes=False,
             message="ALERTE SÉCURITÉ : Le fingerprint SSH a changé ! Possible attaque man-in-the-middle.",
+            fingerprint_attendu=exc.expected,
+            fingerprint_recu=exc.received,
         )
     except paramiko.AuthenticationException as exc:
         logger.warning(
@@ -280,7 +292,11 @@ def tester_connexion(source, trust_new_key: bool = False) -> ResultatConnexion:
         return ResultatConnexion(succes=False, message="Connexion SFTP impossible.")
 
 
-def accepter_fingerprint(source) -> bool:
+def accepter_fingerprint(
+    source,
+    expected_fingerprint: str | None = None,
+    expected_key_type: str | None = None,
+) -> bool:
     """Accepte et enregistre le fingerprint actuel du serveur."""
     port = source.port or 22
     client = paramiko.SSHClient()
@@ -302,6 +318,24 @@ def accepter_fingerprint(source) -> bool:
             key = transport.get_remote_server_key()
             fingerprint = _calculer_fingerprint(key)
             key_type = key.get_name()
+            if expected_fingerprint and fingerprint != expected_fingerprint:
+                logger.warning(
+                    "SFTP fingerprint changed before acceptance for %s:%d - expected %s, got %s",
+                    source.adresse,
+                    port,
+                    expected_fingerprint[:16],
+                    fingerprint[:16],
+                )
+                return False
+            if expected_key_type and key_type != expected_key_type:
+                logger.warning(
+                    "SFTP key type changed before acceptance for %s:%d - expected %s, got %s",
+                    source.adresse,
+                    port,
+                    expected_key_type,
+                    key_type,
+                )
+                return False
             _save_fingerprint(source.id, source.adresse, port, fingerprint, key_type)
             logger.info(
                 "SFTP fingerprint accepted for %s:%d - %s",

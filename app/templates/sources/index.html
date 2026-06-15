@@ -22,7 +22,6 @@
       <thead class="table-light">
         <tr>
           <th scope="col">Nom</th>
-          <th scope="col">Type</th>
           <th scope="col">Protocole</th>
           <th scope="col">Adresse</th>
           <th scope="col" class="text-center">Docs</th>
@@ -41,11 +40,6 @@
             {% if source.description %}
               <div class="text-muted x-small">{{ source.description[:60] }}</div>
             {% endif %}
-          </td>
-          <td>
-            <span class="badge bg-light text-dark border">
-              {{ source.type_serveur|capitalize }}
-            </span>
           </td>
           <td>
             <span class="badge bg-light text-dark border">

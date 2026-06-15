@@ -104,6 +104,7 @@
 <div class="alert alert-info mt-4">
   <i class="bi bi-info-circle" aria-hidden="true"></i>
   <strong>Configuration requise :</strong>
-  Definissez les variables d'environnement SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD et SMTP_FROM.
+  Definissez au minimum SMTP_HOST, SMTP_PORT, SMTP_FROM et SMTP_USE_TLS dans le fichier .env.
+  Ajoutez SMTP_USER et SMTP_PASSWORD seulement si votre serveur SMTP demande une authentification.
 </div>
 {% endblock %}

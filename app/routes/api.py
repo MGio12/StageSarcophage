@@ -265,7 +265,6 @@ def _source_to_dict(source, detail=False):
     if detail:
         d.update({
             "description": source.description,
-            "type_serveur": source.type_serveur,
             "adresse": source.adresse,
             "port": source.port,
             "chemin_distant": source.chemin_distant,

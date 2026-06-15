@@ -31,7 +31,7 @@
         <i class="bi bi-plug" aria-hidden="true"></i> Tester
       </button>
     </form>
-    {% if source.protocole == 'sftp' %}
+    {% if source.protocole == 'sftp' and fingerprint_en_attente %}
     <form method="post"
           action="{{ url_for('sources.accepter_fingerprint', source_id=source.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -68,15 +68,11 @@
 <div class="row g-3 mb-4">
   <!-- Fiche technique -->
   <div class="col-lg-4">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm">
       <div class="card-header fw-semibold">
         <i class="bi bi-info-circle" aria-hidden="true"></i> Paramètres
       </div>
       <ul class="list-group list-group-flush small">
-        <li class="list-group-item d-flex justify-content-between">
-          <span class="text-muted">Type</span>
-          <span>{{ source.type_serveur|capitalize }}</span>
-        </li>
         <li class="list-group-item d-flex justify-content-between">
           <span class="text-muted">Protocole</span>
           <span class="badge bg-light text-dark border">{{ source.protocole|upper }}</span>
@@ -111,6 +107,38 @@
         </li>
       </ul>
     </div>
+
+    {% if source.protocole == 'sftp' %}
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-fingerprint" aria-hidden="true"></i> Fingerprint SSH
+      </div>
+      <div class="card-body small">
+        {% if ssh_fingerprint %}
+        <div class="mb-2">
+          <div class="text-muted">Empreinte acceptée</div>
+          <div class="font-monospace text-break">{{ ssh_fingerprint.key_type }} {{ ssh_fingerprint.fingerprint }}</div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-2">
+          Aucun fingerprint SSH accepté. Cliquez sur Tester depuis cette fiche source pour afficher l'empreinte présentée par le serveur.
+        </p>
+        {% endif %}
+
+        {% if fingerprint_en_attente %}
+        <div class="alert alert-warning mb-0 py-2">
+          <div class="fw-semibold mb-1">Empreinte détectée au dernier test</div>
+          <div class="font-monospace text-break">
+            {{ fingerprint_en_attente.key_type }} {{ fingerprint_en_attente.fingerprint }}
+          </div>
+          <div class="mt-2">
+            Acceptez-la seulement si elle correspond au serveur attendu.
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Documents -->

@@ -5,6 +5,7 @@ env/
 __pycache__/
 *.py[cod]
 *.so
+.ruff_cache/
 
 # Secrets et config locale
 .env
@@ -28,6 +29,19 @@ tests/
 htmlcov/
 .mypy_cache/
 .tox/
+pytest.ini
+requirements-dev.txt
+Makefile
+scripts/
+
+# Documentation et metadonnees de depot
+README.md
+.env.example
+.dockerignore
+.gitignore
+.gitattributes
+docker-compose.yml
+Dockerfile
 
 # IDE et OS
 .vscode/
@@ -51,15 +65,14 @@ Thumbs.db
 .docker/
 .git/
 .claude/
+.agents/
+.gstack/
+dev-fixtures/
 
-# Documentation et livrables hors runtime
+# Livrables hors runtime
 *.md
-!README.md
 docs/
 rapport_stage/
-MethodologieRapportUnivMontpellier.pdf
-RS-Barbero_Lucas*.pdf
-RAPPORT_STAGE_REGLES.md
-DESIGN.md
-cahier_des_charges.md
+*.pdf
 *.odt
+*.pptx

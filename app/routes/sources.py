@@ -9,6 +9,8 @@ from flask import (
     flash,
     jsonify,
     current_app,
+    session,
+    has_request_context,
 )
 from flask_login import login_required
 from flask_login import current_user
@@ -44,6 +46,45 @@ def index():
         )
         stats[s.id] = {"nb_docs": nb, "derniere_sync": derniere_sync}
     return render_template("sources/index.html", sources=sources, stats=stats)
+
+
+def _pending_fingerprint_session_key(source_id: int) -> str:
+    return f"sftp_pending_fingerprint:{source_id}"
+
+
+def _get_fingerprint_en_attente(source_id: int) -> dict | None:
+    if not has_request_context():
+        return None
+    pending = session.get(_pending_fingerprint_session_key(source_id))
+    if isinstance(pending, dict) and pending.get("fingerprint"):
+        return pending
+    return None
+
+
+def _stocker_fingerprint_en_attente(source_id: int, fingerprint: str, key_type: str | None) -> None:
+    if not has_request_context():
+        return
+    session[_pending_fingerprint_session_key(source_id)] = {
+        "fingerprint": fingerprint,
+        "key_type": key_type,
+    }
+
+
+def _effacer_fingerprint_en_attente(source_id: int) -> None:
+    if has_request_context():
+        session.pop(_pending_fingerprint_session_key(source_id), None)
+
+
+def _fingerprint_stocke_source(source: Source):
+    if source.protocole != "sftp" or not source.adresse:
+        return None
+    from app.models.ssh_fingerprint import SSHFingerprint
+
+    return SSHFingerprint.query.filter_by(
+        source_id=source.id,
+        hostname=source.adresse,
+        port=source.port or 22,
+    ).first()
 
 
 @sources_bp.route("/archivees")
@@ -100,7 +141,12 @@ def detail(source_id):
         .all()
     )
     return render_template(
-        "sources/detail.html", source=source, docs=docs, journaux=journaux
+        "sources/detail.html",
+        source=source,
+        docs=docs,
+        journaux=journaux,
+        ssh_fingerprint=_fingerprint_stocke_source(source),
+        fingerprint_en_attente=_get_fingerprint_en_attente(source.id),
     )
 
 
@@ -252,11 +298,31 @@ def accepter_fingerprint(source_id):
         flash("Cette action n'est disponible que pour les sources SFTP.", "warning")
         return redirect(url_for("sources.detail", source_id=source_id))
 
+    fingerprint_en_attente = _get_fingerprint_en_attente(source.id)
+    if not fingerprint_en_attente:
+        if _fingerprint_stocke_source(source):
+            flash("Fingerprint SSH déjà accepté.", "info")
+        else:
+            flash("Cliquez d'abord sur Tester depuis la fiche source.", "warning")
+        return redirect(url_for("sources.detail", source_id=source_id))
+
     from app.services.sftp_service import accepter_fingerprint as sftp_accept
-    if sftp_accept(source):
-        flash("Fingerprint SSH accepté et enregistré.", "success")
+    if sftp_accept(
+        source,
+        expected_fingerprint=fingerprint_en_attente.get("fingerprint"),
+        expected_key_type=fingerprint_en_attente.get("key_type"),
+    ):
+        _effacer_fingerprint_en_attente(source.id)
+        flash(
+            f"Fingerprint SSH accepté : {fingerprint_en_attente.get('key_type')} "
+            f"{fingerprint_en_attente.get('fingerprint')}",
+            "success",
+        )
     else:
-        flash("Impossible d'accepter le fingerprint.", "danger")
+        flash(
+            "Impossible d'accepter le fingerprint. Relancez le test : l'empreinte a peut-être changé.",
+            "danger",
+        )
 
     return redirect(url_for("sources.detail", source_id=source_id))
 
@@ -353,12 +419,28 @@ def _tester_connexion_source(source: Source) -> dict:
         "message": resultat.message,
         "nb_fichiers": resultat.nb_fichiers,
     }
+    if resultat.succes and source.protocole == "sftp":
+        _effacer_fingerprint_en_attente(source.id)
     if getattr(resultat, "fingerprint_nouveau", None):
+        if source.protocole == "sftp" and getattr(source, "id", None):
+            _stocker_fingerprint_en_attente(
+                source.id,
+                resultat.fingerprint_nouveau,
+                resultat.fingerprint_key_type,
+            )
         response["fingerprint_nouveau"] = resultat.fingerprint_nouveau
         response["fingerprint_key_type"] = resultat.fingerprint_key_type
         response["message"] = (
             f"{resultat.message} Fingerprint {resultat.fingerprint_key_type}: "
             f"{resultat.fingerprint_nouveau}"
+        )
+    if getattr(resultat, "fingerprint_recu", None):
+        _effacer_fingerprint_en_attente(source.id)
+        response["fingerprint_attendu"] = resultat.fingerprint_attendu
+        response["fingerprint_recu"] = resultat.fingerprint_recu
+        response["message"] = (
+            f"{resultat.message} Attendu : {resultat.fingerprint_attendu}. "
+            f"Reçu : {resultat.fingerprint_recu}."
         )
     return response
 
@@ -374,12 +456,16 @@ def _source_depuis_formulaire(source: Source | None) -> Source | None:
 
     source.nom = nom
     source.description = request.form.get("description", "").strip() or None
-    source.type_serveur = request.form.get("type_serveur", "linux")
+    # Legacy schema column kept for existing databases; connector choice uses protocole.
+    source.type_serveur = "linux"
     source.protocole = request.form.get("protocole", "sftp")
     if source.protocole == "local" and not current_user.has_permission("sources.local"):
         flash("La configuration de sources locales requiert la permission sources.local.", "danger")
         return None
     source.adresse = request.form.get("adresse", "").strip() or None
+    if source.protocole in {"sftp", "smb"} and not source.adresse:
+        flash("Adresse obligatoire pour une source SFTP ou SMB/CIFS.", "danger")
+        return None
     port_val = request.form.get("port", "").strip()
     source.port = int(port_val) if port_val.isdigit() else None
     source.chemin_distant = request.form.get("chemin_distant", "").strip()
